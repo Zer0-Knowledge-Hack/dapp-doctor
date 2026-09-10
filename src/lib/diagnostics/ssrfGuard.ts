@@ -140,6 +140,25 @@ export function blockedAddressReason(address: string): string | null {
   return 'not an IP address';
 }
 
+/**
+ * The OS resolver has no timeout of its own, and it runs before the HTTP
+ * request, so `rpcCall`'s own timeout does not cover it. Left unbounded, one
+ * hostname that never answers hangs the whole request — which on a serverless
+ * host means the function is killed and the caller gets nothing at all.
+ */
+const DNS_TIMEOUT_MS = 3_000;
+const TIMEOUT_MARKER = 'dns-timeout';
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout;
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(TIMEOUT_MARKER)), ms);
+    }),
+  ]).finally(() => clearTimeout(timer)) as Promise<T>;
+}
+
 export type HostCheck =
   | { ok: true; addresses: string[] }
   /**
@@ -169,9 +188,16 @@ export async function resolvePublicAddresses(hostname: string): Promise<HostChec
 
   let resolved: Array<{ address: string }>;
   try {
-    resolved = await dnsLookup(hostname, { all: true });
-  } catch {
-    return { ok: false, kind: 'unresolvable', reason: 'the hostname does not resolve' };
+    resolved = await withTimeout(dnsLookup(hostname, { all: true }), DNS_TIMEOUT_MS);
+  } catch (error) {
+    return {
+      ok: false,
+      kind: 'unresolvable',
+      reason:
+        error instanceof Error && error.message === TIMEOUT_MARKER
+          ? `the hostname did not resolve within ${DNS_TIMEOUT_MS} ms`
+          : 'the hostname does not resolve',
+    };
   }
 
   if (resolved.length === 0) {

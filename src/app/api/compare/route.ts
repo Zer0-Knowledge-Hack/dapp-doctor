@@ -5,6 +5,10 @@ import { parseTarget } from '@/lib/diagnostics/parseTarget';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// two full diagnoses in parallel can outlast a serverless default of 10s when a
+// provider is slow. Without this the function is killed and the caller gets
+// nothing, which is worse than a slow but honest report.
+export const maxDuration = 30;
 
 /**
  * Runs two diagnoses and returns the difference.

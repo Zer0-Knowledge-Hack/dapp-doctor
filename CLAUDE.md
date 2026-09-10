@@ -31,10 +31,11 @@ without discussing it with the team.**
 2. **Never infer what was not observed.** When a check cannot run, it reports
    `NOT_TESTED` with the reason. A result is never deduced from another check.
 
-3. **Corrective actions are deterministic.** The table in
-   `checks/helpers.ts` maps failure → action without calling any model.
-   Nebius sits *on top of* this, never *instead of* it: if the AI goes down or
-   hallucinates, the diagnosis has to keep working.
+3. **The deterministic floor never disappears.** The table in
+   `checks/helpers.ts` maps failure → action without calling any model, and it
+   must keep working when the AI is down. But it is a floor, not a ceiling:
+   Nebius owns work the table cannot do, and that work is in the main flow.
+   See section 6 for where the line sits and why the track requires it there.
 
 4. **Read-only, always.** The engine uses `eth_call`, `eth_getCode`,
    `eth_chainId`, `eth_blockNumber` and `eth_getBlockByNumber`. Nothing else.
@@ -106,17 +107,56 @@ integration, the project is out of that track. That is why it is three
 complete tracks and not six half-done ones, and why nobody touches someone
 else's track.
 
-| Track | Module | Hard requirement |
+| Track | Module | Hard requirement (verbatim from the brief) |
 |---|---|---|
-| Nebius (Applied AI) | AI diagnosis + 8 evaluation cases | concrete task, cases, metrics, limits shown |
-| Linkup (Deep Research) | 1–2 provider error categories | research, verify the source, and **use** the finding |
-| Render (Workflows) | 5–6 task pipeline | state, failure, retry and recovery demonstrable |
+| Nebius (Applied AI) | AI diagnosis + evaluation cases | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
+| Render (Workflows) | multi-step pipeline | Render Workflows executes it; recovery from a failed step; retries must not create duplicate records or actions |
+
+**Linkup is out of scope.** Its entry requirement is not a single search: the
+research flow has to *store findings and use them to decide what to investigate
+next*, and show follow-up searches. That is iterative research, not the one
+lookup the earlier plan budgeted for. Entering and failing a challenge does not
+harm the others, so this is purely a time decision — the hours go to Shipping,
+Nebius and Render instead.
+
+### Where the Nebius line sits
+
+The track requires Token Factory to be *essential to the task*, so the AI cannot
+be a switch we flip off. The split:
+
+- **The six checks and their pass/fail verdicts stay deterministic.** An AI must
+  never decide whether a check passed. That is what makes the report trustworthy.
+- **Nebius owns what the table cannot do:** interpreting a raw provider error
+  string, correlating findings across checks into one root cause, and writing
+  the diagnosis the user reads.
+- If Nebius is unavailable, the report degrades to the deterministic table and
+  says so. It does not silently pretend the AI answered.
 
 The deterministic engine is closed. The three integrations are separable
 modules: if you are editing `src/lib/diagnostics/`, you have probably stepped
 into someone else's path.
 
-## 7. Honesty in the demo
+## 7. What the submission actually requires
+
+From the official brief. Do not build against memory of it:
+
+- **A public project URL, no private login.** A video, mockup or repository
+  without a usable public build is explicitly insufficient. Shipping is 35 of
+  100 points in every challenge — this is the one blocking requirement.
+- **An X post carrying the demo video, max 2 minutes**, tagging `@nerdconf_ar`
+  in the post or a comment. There is no separate video field. LinkedIn does not
+  count.
+- **GitHub is optional.** Publishing the code is not required. We keep the repo
+  public anyway: it is the starting-commit record that separates work done
+  during the event from anything prior, which the rules do require.
+- **Submit, not Save.** A saved draft is not a submission. It can be updated
+  until the deadline.
+- Per-challenge evidence: the technology, its role, and a demo timestamp, link
+  or test steps a judge can verify.
+
+Deadline: **2026-09-14T02:59Z** — 23:59 ART on Sunday 13.
+
+## 8. Honesty in the demo
 
 The submission checklist requires it and the jury scores it:
 
@@ -126,7 +166,7 @@ The submission checklist requires it and the jury scores it:
 - The README does not announce integrations that do not work yet. If Nebius
   is not integrated, the README says it is not integrated.
 
-## 8. Hackathon data
+## 9. Hackathon data
 
 Never answer from memory about the hackathon, the submission or the projects:
 the data changes live. Always call the `burning-token` MCP tools

@@ -1,3 +1,12 @@
+> **SUPERADO — no trabajar contra este documento.**
+> Reemplazado por [plan-v3.md](plan-v3.md) el 10 de septiembre de 2026, despues
+> de leer los briefs oficiales. Sus dos premisas resultaron falsas: no hay
+> limite de tracks y fallar uno no penaliza a los otros, y Linkup exige
+> investigacion iterativa, no una busqueda. Se conserva como registro historico.
+>
+> *(Este archivo queda en espanol: es el documento original del autor. El resto
+> del proyecto es en ingles.)*
+
 # DAPP DOCTOR
 ## PLAN DE TRABAJO v2 — EJECUCIÓN SOLO DEVELOPER
 *Burning Token · NERDCONF — ajustado a las reglas oficiales del evento*

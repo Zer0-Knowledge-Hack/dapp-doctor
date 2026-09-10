@@ -20,7 +20,6 @@ Base Sepolia live. The sponsor integrations are not in yet.
 | Public deployment | ⛔ pending |
 | Demo contract on Base Sepolia | ⛔ pending |
 | Nebius — Applied AI | ⛔ pending |
-| Linkup — Deep Research | ⛔ pending |
 | Render — Workflows | ⛔ pending |
 
 This README is updated as each piece lands. It does not announce anything that
@@ -173,9 +172,12 @@ the diagnosis keeps working.
 
 | Track | How it is covered | Status |
 |---|---|---|
-| **Nebius — Applied AI** | RPC failure diagnosis as a concrete task, 8 cases with known causes, metrics for classification, action and non-invention. | ⛔ pending |
-| **Linkup — Deep Research** | Search of official documentation for a provider error, and the derived action applied to the report. | ⛔ pending |
-| **Render — Workflows** | 5–6 task pipeline with an injected failure, retry and recovery without duplicating findings. | ⛔ pending |
+| **Nebius — Applied AI** | Token Factory interprets raw provider errors and correlates the six findings into one root cause, in the main flow. Evaluated on cases with known causes. | ⛔ pending |
+| **Render — Workflows** | Multi-step pipeline with an injected failure, retry and recovery without duplicating findings. | ⛔ pending |
+
+Deep Research · Linkup is not being entered: its entry requirement is iterative
+research that stores findings and uses them to choose the next search, which is
+beyond what this project needs.
 
 ## AI and prior components disclosure
 
