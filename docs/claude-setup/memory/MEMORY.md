@@ -1,0 +1,1 @@
+- [Ruteo del MCP Burning Token](burning-token-mcp-routing.md) — qué tool llamar para status, proyectos, entrega y preguntas de la hackathon.
