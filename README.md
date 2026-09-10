@@ -122,6 +122,30 @@ curl -X POST http://localhost:3000/api/diagnose \
 `POST /api/compare` takes `{ "before": {...}, "after": {...} }` with the same
 shape and returns the delta.
 
+## Security model
+
+The API takes a URL from an untrusted caller and fetches it server-side, which
+makes it an SSRF primitive by construction. Three controls keep that contained,
+in `ssrfGuard.ts` and `rpc.ts`:
+
+1. **Every resolved address is checked**, not just the first. Loopback,
+   link-local (`169.254.169.254`, where cloud metadata lives), private ranges,
+   CGNAT, multicast and the rest of reserved space are refused before a socket
+   is opened. IPv4-mapped, NAT64 and 6to4 forms are decoded and checked as the
+   IPv4 destination they actually carry.
+2. **The connection is pinned to the addresses that were validated.** Without
+   this, a hostname can answer with a public address during the check and a
+   private one when the socket opens — DNS rebinding.
+3. **Redirects are never followed.** `rpc.ts` uses `node:http`, not `fetch`,
+   partly for this: a redirect is the standard way around a host check.
+
+Third-party response content is bounded and validated before entering a report:
+responses are capped, echoed text is stripped of control characters and
+truncated, and `eth_blockNumber` output must be a hex quantity to be shown.
+
+`pnpm ssrf` asserts all of it, including that the metadata endpoint and
+loopback are refused end to end.
+
 ## Architecture
 
 ```
@@ -132,6 +156,7 @@ src/lib/diagnostics/
   engine.ts       orchestration, gating and status aggregation
   compare.ts      delta between two diagnoses
   parseTarget.ts  validation shared by both routes
+  ssrfGuard.ts    address validation and anti-rebinding connection pinning
   checks/         one check per file
 ```
 

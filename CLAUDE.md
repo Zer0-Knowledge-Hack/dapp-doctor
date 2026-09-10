@@ -55,7 +55,24 @@ comment in `engine.ts`.
   or an equivalent. RPC providers put the API key in the path or the query
   string, and the report is public.
 
-## 3. Branches and PRs
+## 3. The SSRF guard
+
+`/api/diagnose` and `/api/compare` fetch a URL supplied by an unauthenticated
+caller. That is an SSRF primitive, and `ssrfGuard.ts` is what contains it.
+
+- Never call `fetch` with a user-supplied URL. Route it through `rpcCall`,
+  which validates the destination and pins the connection first.
+- Never follow redirects on a user-supplied URL. `node:http` does not, which
+  is a reason we use it instead of `fetch`.
+- Never echo a third-party response into a report unvalidated. Bound it and
+  strip it, the way `sanitize` and `isHexQuantity` do.
+- If you add a network call anywhere, add its attack case to
+  `scripts/ssrf.mts`.
+
+`pnpm ssrf` must stay green. If it fails, the deployment is exposing the
+internal network of whatever host it runs on.
+
+## 4. Branches and PRs
 
 `main` is protected: no direct pushes, no force-pushes.
 
@@ -72,17 +89,17 @@ what stops three people from stepping on `main` at once.
 asked at that moment. Committing locally is fine. Publishing is the person's
 call, and one authorisation does not carry over to the next time.
 
-## 4. Before merging
+## 5. Before merging
 
 ```bash
-pnpm verify   # typecheck + build + smoke, in that order
+pnpm verify   # typecheck + build + ssrf + smoke, in that order
 ```
 
-All three stages must pass. The smoke test hits real public RPCs, so it can fail
+All four stages must pass. The smoke test hits real public RPCs, so it can fail
 because a provider is down rather than because of your code — if it fails,
 look at which scenario before assuming you broke something.
 
-## 5. Track ownership
+## 6. Track ownership
 
 Each sponsor track is **binary eligibility**: without the complete
 integration, the project is out of that track. That is why it is three
@@ -99,7 +116,7 @@ The deterministic engine is closed. The three integrations are separable
 modules: if you are editing `src/lib/diagnostics/`, you have probably stepped
 into someone else's path.
 
-## 6. Honesty in the demo
+## 7. Honesty in the demo
 
 The submission checklist requires it and the jury scores it:
 
@@ -109,7 +126,7 @@ The submission checklist requires it and the jury scores it:
 - The README does not announce integrations that do not work yet. If Nebius
   is not integrated, the README says it is not integrated.
 
-## 7. Hackathon data
+## 8. Hackathon data
 
 Never answer from memory about the hackathon, the submission or the projects:
 the data changes live. Always call the `burning-token` MCP tools

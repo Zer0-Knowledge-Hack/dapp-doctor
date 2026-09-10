@@ -18,6 +18,8 @@ export function notTested(
  */
 export function actionForFailure(failure: Extract<RpcOutcome, { ok: false }>): string {
   switch (failure.kind) {
+    case 'blocked':
+      return 'This service only contacts publicly routable hosts. Private, loopback and link-local addresses are refused, so point it at the RPC endpoint as it is reachable from the internet.';
     case 'network':
       return 'Check that the RPC URL is correct and that the host resolves from this environment.';
     case 'timeout':

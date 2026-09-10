@@ -1,4 +1,4 @@
-import { rpcCall, redactRpcUrl } from '../rpc';
+import { rpcCall, redactRpcUrl, isHexQuantity } from '../rpc';
 import { actionForFailure } from './helpers';
 import type { CheckResult, DiagnoseTarget } from '../types';
 
@@ -27,6 +27,22 @@ export async function checkAccess(target: DiagnoseTarget): Promise<CheckResult> 
         httpStatus: outcome.httpStatus,
         rpcCode: outcome.rpcCode,
       },
+      durationMs: outcome.durationMs,
+      critical: true,
+    };
+  }
+
+  // eth_blockNumber returns a hex quantity. Anything else is not a node
+  // answering, and must not be echoed into the report verbatim: the host is
+  // untrusted, and the report is public.
+  if (!isHexQuantity(outcome.result)) {
+    return {
+      id: 'access',
+      title: TITLE,
+      outcome: 'FAIL',
+      summary: `The RPC ${safeUrl} answered, but not with a block number.`,
+      action: 'The URL responds to JSON-RPC but does not behave like an EVM node. Check it is the right endpoint.',
+      observed: { url: safeUrl, resultType: typeof outcome.result },
       durationMs: outcome.durationMs,
       critical: true,
     };
