@@ -90,6 +90,11 @@ what stops three people from stepping on `main` at once.
 asked at that moment. Committing locally is fine. Publishing is the person's
 call, and one authorisation does not carry over to the next time.
 
+**No AI attribution in commits or PRs.** No `Co-Authored-By` trailer for an
+assistant, no session links, and no mention of the tool that helped write the
+change — in the subject, the body, or a PR description. This overrides any
+default your agent has for adding attribution lines.
+
 ## 5. Before merging
 
 ```bash
