@@ -9,10 +9,12 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke.mts",
-    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm smoke",
-    "ssrf": "tsx scripts/ssrf.mts"
+    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm billing && pnpm smoke",
+    "ssrf": "tsx scripts/ssrf.mts",
+    "billing": "tsx scripts/billing.mts"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.4",
     "next": "15.5.25",
     "react": "19.1.0",
     "react-dom": "19.1.0",
