@@ -1,103 +1,240 @@
-import Image from "next/image";
+'use client';
+
+import Link from 'next/link';
+import { useState } from 'react';
+import type { CheckOutcome, DiagnosisReport, OverallStatus } from '@/lib/diagnostics/types';
+
+const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+interface FormState {
+  rpcUrl: string;
+  fallbackRpcUrl: string;
+  expectedChainId: string;
+  contractAddress: string;
+  criticalReadSignature: string;
+}
+
+const PRESETS: Record<string, { label: string; hint: string; values: FormState }> = {
+  broken: {
+    label: 'Broken demo',
+    hint: 'The app points at Base Mainnet while expecting Base Sepolia. The typical silent failure.',
+    values: {
+      rpcUrl: 'https://mainnet.base.org',
+      fallbackRpcUrl: '',
+      expectedChainId: '84532',
+      contractAddress: USDC_BASE,
+      criticalReadSignature: 'symbol() returns (string)',
+    },
+  },
+  healthy: {
+    label: 'Correct configuration',
+    hint: 'Same app, network and fallback configured properly. Useful to compare before and after.',
+    values: {
+      rpcUrl: 'https://mainnet.base.org',
+      fallbackRpcUrl: 'https://base-rpc.publicnode.com',
+      expectedChainId: '8453',
+      contractAddress: USDC_BASE,
+      criticalReadSignature: 'symbol() returns (string)',
+    },
+  },
+};
+
+const STATUS_STYLE: Record<OverallStatus, { text: string; box: string; label: string }> = {
+  READY: { text: 'text-emerald-300', box: 'border-emerald-500/40 bg-emerald-500/10', label: 'READY' },
+  AT_RISK: { text: 'text-amber-300', box: 'border-amber-500/40 bg-amber-500/10', label: 'AT RISK' },
+  BLOCKED: { text: 'text-rose-300', box: 'border-rose-500/40 bg-rose-500/10', label: 'BLOCKED' },
+  NOT_TESTED: { text: 'text-zinc-400', box: 'border-zinc-600/40 bg-zinc-500/10', label: 'NOT TESTED' },
+};
+
+const OUTCOME_STYLE: Record<CheckOutcome, string> = {
+  PASS: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  WARN: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  FAIL: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+  NOT_TESTED: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [form, setForm] = useState<FormState>(PRESETS.broken.values);
+  const [report, setReport] = useState<DiagnosisReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  function update(field: keyof FormState, value: string) {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  }
+
+  async function diagnose() {
+    setRunning(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/diagnose', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setError(payload.error ?? 'The diagnosis failed.');
+        setReport(null);
+      } else {
+        setReport(payload as DiagnosisReport);
+      }
+    } catch {
+      setError('Could not reach the diagnostic engine.');
+      setReport(null);
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <main className="mx-auto max-w-4xl px-6 py-12">
+      <header className="mb-10">
+        <h1 className="text-3xl font-semibold tracking-tight">DApp Doctor</h1>
+        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+          Six deterministic, read-only checks on a dApp RPC configuration. No private keys, no
+          seed phrases, no transactions.
+        </p>
+        <Link
+          href="/compare"
+          className="mt-4 inline-block text-xs text-zinc-500 transition hover:text-zinc-300"
+        >
+          Compare before and after →
+        </Link>
+      </header>
+
+      <section className="mb-8 flex flex-wrap gap-2">
+        {Object.entries(PRESETS).map(([key, preset]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => {
+              setForm(preset.values);
+              setReport(null);
+              setError(null);
+            }}
+            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            title={preset.hint}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            {preset.label}
+          </button>
+        ))}
+      </section>
+
+      <section className="grid gap-4 rounded-lg border border-zinc-800 p-5 sm:grid-cols-2">
+        <Field label="Primary RPC" value={form.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
+        <Field
+          label="Fallback RPC (optional)"
+          value={form.fallbackRpcUrl}
+          onChange={(v) => update('fallbackRpcUrl', v)}
+        />
+        <Field
+          label="Expected chain ID"
+          value={form.expectedChainId}
+          onChange={(v) => update('expectedChainId', v)}
+        />
+        <Field
+          label="Contract address (optional)"
+          value={form.contractAddress}
+          onChange={(v) => update('contractAddress', v)}
+        />
+        <div className="sm:col-span-2">
+          <Field
+            label="Critical read (optional)"
+            value={form.criticalReadSignature}
+            onChange={(v) => update('criticalReadSignature', v)}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        <div className="sm:col-span-2">
+          <button
+            type="button"
+            onClick={diagnose}
+            disabled={running}
+            className="rounded-md bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
+          >
+            {running ? 'Diagnosing...' : 'Diagnose'}
+          </button>
+        </div>
+      </section>
+
+      {error && (
+        <p className="mt-6 rounded-md border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {error}
+        </p>
+      )}
+
+      {report && <Report report={report} />}
+    </main>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block text-sm">
+      <span className="mb-1.5 block text-zinc-400">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        spellCheck={false}
+        className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 outline-none transition focus:border-zinc-500"
+      />
+    </label>
+  );
+}
+
+function Report({ report }: { report: DiagnosisReport }) {
+  const style = STATUS_STYLE[report.status];
+  return (
+    <section className="mt-8">
+      <div className={`rounded-lg border px-5 py-4 ${style.box}`}>
+        <div className={`text-xs font-semibold tracking-widest ${style.text}`}>{style.label}</div>
+        <p className="mt-1.5 text-sm text-zinc-200">{report.headline}</p>
+        <p className="mt-2 text-xs text-zinc-500">
+          {report.checks.length} checks in {report.durationMs} ms ·{' '}
+          {new Date(report.startedAt).toLocaleString()}
+        </p>
+      </div>
+
+      <ol className="mt-4 space-y-3">
+        {report.checks.map((check) => (
+          <li key={check.id} className="rounded-lg border border-zinc-800 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold tracking-wider ${OUTCOME_STYLE[check.outcome]}`}
+              >
+                {check.outcome.replace('_', ' ')}
+              </span>
+              <span className="text-sm font-medium text-zinc-200">{check.title}</span>
+              <span className="ml-auto text-[11px] text-zinc-600">{check.durationMs} ms</span>
+            </div>
+            <p className="mt-2 text-sm text-zinc-300">{check.summary}</p>
+            {check.action && (
+              <p className="mt-2 border-l-2 border-zinc-700 pl-3 text-sm text-zinc-400">
+                <span className="font-medium text-zinc-300">What to do: </span>
+                {check.action}
+              </p>
+            )}
+            {check.observed && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-400">
+                  Observed data
+                </summary>
+                <pre className="mt-1.5 overflow-x-auto rounded bg-zinc-900/80 p-2.5 text-[11px] text-zinc-400">
+                  {JSON.stringify(check.observed, null, 2)}
+                </pre>
+              </details>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
