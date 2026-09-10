@@ -86,18 +86,22 @@ fixed four things does not make up for breaking one that used to pass.
 
 ## Running it
 
+This project uses **pnpm**. Do not use npm or yarn: the lockfile is
+`pnpm-lock.yaml`, and mixing package managers produces a second lockfile and a
+different dependency tree for whoever runs it.
+
 ```bash
-npm install
-npm run dev          # http://localhost:3000
+pnpm install
+pnpm dev             # http://localhost:3000
 ```
 
 Full verification:
 
 ```bash
-npx tsc --noEmit
-npm run build
-npx tsx scripts/smoke.mts   # 5 scenarios against Base, live
+pnpm verify          # typecheck + build + smoke
 ```
+
+Or one at a time: `pnpm typecheck`, `pnpm build`, `pnpm smoke`.
 
 The smoke test hits real public RPCs, so it can fail because a provider is
 down rather than because of the code.

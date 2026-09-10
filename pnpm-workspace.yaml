@@ -1,0 +1,6 @@
+# esbuild backs tsx, and unrs-resolver backs eslint's module resolution.
+# Both fetch a platform binary in their postinstall, so pnpm has to be told
+# explicitly that running their build scripts is allowed.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

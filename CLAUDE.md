@@ -7,6 +7,11 @@ Burning Token · NERDCONF hackathon. Team of 3. Deadline: Sunday
 **This project is written in English** — code, comments, UI strings, commit
 messages, docs. Do not mix languages.
 
+**This project uses pnpm.** Never run `npm` or `yarn`, and never `npx`: use
+`pnpm`, `pnpm dlx` and the scripts in `package.json`. Mixing package managers
+creates a second lockfile and a different dependency tree for whoever installs
+next. The pnpm version is pinned in `packageManager`.
+
 > This file holds the **repository** rules and travels with it.
 > Machine-local Claude Code session rules live in `C:\Burning token\CLAUDE.md`,
 > outside the repo.
@@ -70,12 +75,10 @@ call, and one authorisation does not carry over to the next time.
 ## 4. Before merging
 
 ```bash
-npx tsc --noEmit          # types
-npm run build             # production build
-npx tsx scripts/smoke.mts # 5 scenarios against Base, live
+pnpm verify   # typecheck + build + smoke, in that order
 ```
 
-All three must pass. The smoke test hits real public RPCs, so it can fail
+All three stages must pass. The smoke test hits real public RPCs, so it can fail
 because a provider is down rather than because of your code — if it fails,
 look at which scenario before assuming you broke something.
 
