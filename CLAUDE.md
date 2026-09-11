@@ -123,7 +123,7 @@ the goal is cash prizes.
 | Track | Status | Module | Hard requirement (verbatim from the brief) |
 |---|---|---|---|
 | RevenueCat (Subscriptions) | **Active — live** | `src/lib/billing/`, `src/lib/launch/`, `/history`, `/launch` | Integrate a RevenueCat SDK; configure an offer and use entitlements to control access to a useful feature; show a successful purchase, a failed one and expired access |
-| Nebius (Applied AI) | **On hold** — credits could not be redeemed from our country | `src/lib/ai/` (not wired in) | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
+| Nebius (Applied AI) | **Not entered** — credits could not be redeemed from our country | `src/lib/ai/` (not wired in) | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
 
 Not entered: **Linkup** (its requirement is iterative research that stores
 findings and uses them to choose the next search), **Convex** (the frontend
@@ -131,6 +131,9 @@ would have to move to Convex static hosting), and **Render** (it awards credits,
 not cash).
 
 ### Where the Nebius line sits
+
+Nebius is not entered. This section stays because the line it draws applies to
+any AI feature added later.
 
 The track requires Token Factory to be *essential to the task*, so the AI cannot
 be a switch we flip off. The split:

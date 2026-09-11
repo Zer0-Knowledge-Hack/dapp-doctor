@@ -21,7 +21,7 @@ Built for the **Burning Token** hackathon by NERDCONF (September 2026).
 | Launch Check (`/launch`): the stricter bar before mainnet, a Pro feature | ✅ live |
 | MCP server for agents (`/api/mcp`) | ✅ live |
 | Config reader (paste a `.env` or config) | 🟡 built and tested; not yet in the web UI |
-| Nebius — AI root-cause analysis | ⏸ on hold: client written, not wired in |
+| Nebius — AI root-cause analysis | ✖ not entered: the credits could not be redeemed from our country |
 
 This README is updated as each piece lands. It does not announce anything that
 does not work yet.
@@ -254,7 +254,7 @@ src/
     billing/              RevenueCat: browser purchase flow, server entitlements
     history/store.ts      Upstash Redis storage, redacted before writing
     mcp/                  agent tools, secret refusal, agent-facing output
-    ai/                   Nebius Token Factory client (on hold, not wired in)
+    ai/                   Nebius Token Factory client (not entered, not wired in)
 ```
 
 The engine deliberately avoids viem's transport: it needs to tell a network
@@ -262,16 +262,15 @@ failure apart from a provider 429 and from a JSON-RPC error, because each
 leads to a different action. viem is used to encode and decode the critical
 read.
 
-Corrective actions are a **deterministic table**, not a model call. When the
-Nebius integration is wired in, the AI explains the root cause on top of that
-table; it never decides whether a check passed.
+Corrective actions are a **deterministic table**, not a model call. No model
+decides whether a check passed.
 
 ## Challenges
 
 | Challenge | How it is covered | Status |
 |---|---|---|
 | **Subscriptions — RevenueCat** | DApp Doctor Pro: offering with monthly, yearly and lifetime plans, the `daap_doctor_pro` entitlement gating Launch Check and diagnosis history, verified server-side. Handles successful, cancelled and failed purchases and expired access. | ✅ live, Test Store |
-| **Applied AI — Nebius** | Token Factory would explain the single root cause behind several failing checks, in the main flow. | ⏸ on hold: the credits could not be redeemed from our country |
+| **Applied AI — Nebius** | Not entered: the Token Factory credits could not be redeemed from our country. | ✖ not entered |
 
 Deep Research (Linkup), Multiplayer (Convex) and Workflows (Render) are not
 being entered.

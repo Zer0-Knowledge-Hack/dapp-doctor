@@ -18,7 +18,7 @@ first.
 | MCP server for agents | ✅ built; added after the plan was written |
 | Config reader (paste a `.env` or config) | 🟡 built and tested, not yet in the web UI |
 | Landing page | 🟡 being built from `docs/landing-brief.md` |
-| **Nebius** | ⏸ **on hold**: the Token Factory credits could not be redeemed from our country. Worth asking the organizers at hey@nerdconf.com for another route |
+| **Nebius** | ✖ **not entered** (decided 11 September): the Token Factory credits could not be redeemed from our country |
 | RevenueCat end-to-end test with a real Test Store purchase | ⏳ pending, needs a browser |
 | Demo video, X post, Submit | ⏳ Sunday |
 

@@ -27,9 +27,10 @@ for that moment.
 | MCP server for agents | ✅ | ✅ |
 | **Launch Check** (`/launch`): the stricter bar before mainnet | | ✅ live |
 | **Diagnosis history** | | ✅ live |
-| Saved setups re-checked on a schedule, with a timeline | | not built |
-| Launch Check from an agent or CI, with a personal token | | not built |
-| Team seats | | not built |
+| Launch Check from your own agent, with a personal MCP token (section 3) | | not built |
+| Reports by email to the person who bought Pro (section 4) | | not built |
+| Saved setups re-checked on a schedule, emailing only when the verdict changes | | not built |
+| Team seats, with reports to every member | | not built |
 
 Only the rows marked live exist today. The rest is roadmap and is sold as
 nothing until it ships.
@@ -65,7 +66,82 @@ through RevenueCat **Test Store**. No card is charged.
   (option A below), prices live in Paddle. Whether Paddle prices can be
   localized the same way is **to verify** in Paddle's documentation.
 
-## 3. Getting paid from Latin America
+## 3. Pro inside the customer's project: a personal MCP token
+
+Today the MCP server is free and anonymous. It offers the three free tools, and
+it cannot tell one agent from another. That is right for the free tier.
+
+For Pro, the agent working on the customer's own repository becomes the main
+way in. Launch Check runs where the configuration lives, without anyone
+copying values into a form.
+
+1. **The buyer gets a token.** After purchase, the Pro page shows a personal
+   token, with a button to rotate it.
+2. **The buyer connects their agent once.** The agent's MCP configuration sends
+   the token as an `Authorization` header.
+   - It never goes in the URL, the same rule the history id already follows.
+3. **The server maps the token to the buyer:**
+   - it stores only a hash of the token;
+   - the token maps to the buyer's RevenueCat user id;
+   - every call checks the entitlement, exactly as `/api/launch-check` does now.
+4. **A `launch_check` tool appears for token holders.**
+   - Without a token, or once Pro expires, the agent gets the three free tools
+     and a plain message that Launch Check is part of Pro.
+5. **The secret refusal still applies first.** Text holding a private key or a
+   seed phrase is refused before it is read, token or not.
+
+**Why a customer keeps paying:** the check runs every time the agent touches
+the RPC configuration, not once before a launch. That turns a one-off check into
+a habit.
+
+## 4. Reports by email, to the person who bought Pro
+
+A Launch Check result is worth sending: the team lead who paid is often not the
+developer who ran it.
+
+### What is sent
+
+- **After each Launch Check**, from the web or from an agent: the verdict, the
+  headline, the rules that failed with what to do, and a link to the full report.
+- **When a saved setup changes verdict.** A scheduled re-check that stays READY
+  sends nothing; one that turns AT RISK or BLOCKED sends the email. Alerts fire
+  on change, not on every run, or they become noise that gets filtered.
+- **Never:** RPC URLs, which carry provider API keys in their path or query.
+  Emails show hostnames at most, like the reports do today.
+
+### Which address
+
+- **Verified:** RevenueCat's web checkout asks the buyer for an email when we
+  do not pass one. Its SDK accepts a `customerEmail` to prefill it.
+- **Verified:** reading that address back from RevenueCat is not simple.
+  - It arrives in webhook events, but [webhooks are a RevenueCat Pro-plan
+    feature][rc-webhooks].
+  - Our account's plan is **to verify**.
+  - Whether Test Store collects an email at all is **to verify** during the
+    purchase test.
+- **Proposal:** ask for the report address on our own Pro page and confirm it
+  with a one-time link before sending anything.
+  - Pass the same address to the checkout as `customerEmail`, so billing and
+    reports match.
+  - This works on any RevenueCat plan and any billing engine.
+  - It never sends to an address nobody confirmed. Without that confirmation,
+    the feature would let anyone email strangers from our domain.
+- **Every email carries an unsubscribe link.** The address is deleted on request
+  and when the account is closed.
+
+### What it takes
+
+- **A transactional email provider:** which one, and its price, is **to verify**.
+- **A domain we own**, to authenticate the mail with SPF and DKIM. The current
+  `vercel.app` address cannot be used to send mail.
+- **Sending exactly once.** A retried step must not email the same report twice,
+  so each email gets an idempotency key made from the report id and the
+  recipient.
+- Scheduled re-checks need something to run them on a timer, retry a failed step
+  and keep the result. That is the job of a background workflow engine, and it is
+  **not built**.
+
+## 5. Getting paid from Latin America
 
 This is the hard part, and the part the hackathon's Test Store setup hides.
 
@@ -130,7 +206,7 @@ The verifier needs `eth_getTransactionReceipt`. That is a read, but it is not on
 the engine's list of allowed methods. It would live in its own module, and
 adding it is a team decision under the engine invariants in the rules file.
 
-## 4. Recommendation
+## 6. Recommendation
 
 1. **Now, for the hackathon:** Test Store, declared as such everywhere. Nothing
    changes.
@@ -148,12 +224,15 @@ adding it is a team decision under the engine invariants in the rules file.
    - Option B only if the company is incorporated in Brazil, Mexico or the US
      for other reasons.
 
-## 5. Reaching customers
+## 7. Reaching customers
 
 - **The MCP server is the distribution.** A developer who adds DApp Doctor to
   their agent runs it every time the agent touches RPC configuration. The Pro
-  upgrade should appear where the agent reports a result, once a personal token
-  exists.
+  upgrade appears where the agent reports a result, and the personal token
+  (section 3) turns that developer into a customer without leaving the editor.
+- **The emailed report travels.** A Launch Check emailed to a team lead is read
+  by people who never opened the product. That makes each report a small piece
+  of distribution.
 - **Launch moments.** Hackathons, accelerator demo days and mainnet launch
   announcements are where the need is sharpest. Start with the communities the
   team already belongs to, NERDCONF's included.
@@ -161,7 +240,7 @@ adding it is a team decision under the engine invariants in the rules file.
   and the report's "what to do" lines is cheap and is the clearest regional
   advantage over tools built elsewhere.
 
-## 6. Costs to quantify
+## 8. Costs to quantify
 
 These have not been measured yet, so no figures are given:
 
@@ -170,16 +249,22 @@ These have not been measured yet, so no figures are given:
 - RevenueCat's fee above its free tier (**to verify** on its pricing page).
 - The payment rail's fees: Paddle's, or network gas for USDC, which the payer
   covers.
+- The email provider, and a domain to send from.
+- Scheduled re-checks: one Launch Check per saved setup per run.
 
-## 7. Open questions
+## 9. Open questions
 
 - Which country would the company be registered in? That decides whether
   option B is even available.
 - Does Paddle onboard a pre-revenue solo or three-person team? Its seller review
   has not been checked.
 - Is there a usage cap on Pro, so a scripted agent cannot run Launch Check
-  thousands of times a day on one subscription?
+  thousands of times a day on one subscription? The personal token (section 3)
+  is what makes a cap possible.
+- Which RevenueCat plan is the project on? That decides whether webhooks, and
+  the buyer's checkout email, are available to us.
 
+[rc-webhooks]: https://www.revenuecat.com/docs/integrations/webhooks
 [rc-currency]: https://www.revenuecat.com/docs/web/web-billing/multi-currency-support
 [rc-stripe]: https://www.revenuecat.com/docs/web/connect-stripe-account
 [rc-paddle]: https://www.revenuecat.com/docs/web/integrations/paddle
