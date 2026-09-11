@@ -200,13 +200,18 @@ Keeping secrets out of everything we store or return:
 ```
 src/
   app/
-    page.tsx              the diagnosis tool
+    page.tsx              the landing page
+    diagnose/             the diagnosis tool (?demo=broken runs the demo on arrival)
     compare/              before/after
     history/              DApp Doctor Pro
     api/diagnose          one diagnosis
     api/compare           two diagnoses and their delta
     api/history           a paying user's saved diagnoses
     api/mcp               the MCP server for agents
+  components/
+    landing/              landing sections; copy and LIVE flags in content.ts
+    app/                  the tool pages' shell, fields, notices and report
+    ui/, ecg/             shared stamp, sheet, button and ECG strip
   lib/
     diagnostics/          the engine: checks, gating, verdicts, SSRF guard
     intake/extract.ts     reads RPC URL, chain and contract from any config text

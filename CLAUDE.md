@@ -186,3 +186,29 @@ the data changes live. Always call the `burning-token` MCP tools
 
 The submission is **not** sent from the MCP: it is completed in the project
 form at app.burningtoken.dev.
+
+## 10. Frontend: preserve the clinic punk design
+
+The landing and the tool pages share one visual system, delivered in
+`codex/landing-clinic-punk` and documented in full in `docs/landing-handoff.md`.
+It is owner-approved. **A functionality request is not permission to
+redesign.** Change an established visual decision only when the owner asks for
+that change explicitly.
+
+- Reuse the tokens (`paper`, `ink`, `muted`, `sheet`, `pen`, `triage-*`) and
+  the shared components: `ButtonLink`, `Sheet`, `Stamp`, `Ecg`, and the tool
+  pages' `AppShell`, `Field`, `Notice`, `OutcomeLabel`, `Report`. Extend a
+  component compatibly; never create a competing version of the same control.
+- Big Shoulders for headings, Big Shoulders Stencil only for verdict stamps,
+  Public Sans for text, the system mono stack only for machine values.
+- Triage colours mean status and nothing else. Status text stays black with a
+  coloured bar, so it is legible and never depends on colour alone.
+- Pen blue means an action or guidance on what to do.
+- No dark theme, gradients, new accent colours, rounded card kits, soft
+  shadows, icon packs, UI kits or animation libraries.
+- Copy and LIVE / NOT_YET flags live in `src/components/landing/content.ts`.
+  Flipping a flag is the only change needed when a feature ships.
+- `globals.css`, `layout.tsx`, fonts and shared components affect every page.
+  After touching them, review the landing and all tool pages at 360, 768 and
+  1440 px before calling the change done. Compilation alone does not prove the
+  frontend is intact.
