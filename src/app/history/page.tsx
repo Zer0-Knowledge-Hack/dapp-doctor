@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import type { Offering, Package } from '@revenuecat/purchases-js';
-import type { OverallStatus } from '@/lib/diagnostics/types';
+import { AppShell } from '@/components/app/AppShell';
+import { Notice } from '@/components/app/Notice';
+import { OutcomeLabel } from '@/components/app/OutcomeLabel';
 import type { StoredReport } from '@/lib/history/store';
 import {
   getCurrentOffering,
@@ -16,6 +18,7 @@ import {
   type ProStatus,
 } from '@/lib/billing/client';
 import { USER_ID_HEADER } from '@/lib/billing/constants';
+import { describeChain } from '@/lib/diagnostics/networks';
 
 type AccessState =
   | { kind: 'loading' }
@@ -24,24 +27,11 @@ type AccessState =
   | { kind: 'locked'; reason: string; message: string; expiredAt?: string }
   | { kind: 'unlocked'; reports: StoredReport[]; expiresAt: string | null; storage: boolean };
 
-type Notice = { tone: 'neutral' | 'success' | 'failure'; text: string } | null;
-
-const STATUS_STYLE: Record<OverallStatus, string> = {
-  READY: 'text-emerald-300 border-emerald-500/40 bg-emerald-500/10',
-  AT_RISK: 'text-amber-300 border-amber-500/40 bg-amber-500/10',
-  BLOCKED: 'text-rose-300 border-rose-500/40 bg-rose-500/10',
-  NOT_TESTED: 'text-zinc-400 border-zinc-600/40 bg-zinc-500/10',
-};
-
-const NOTICE_STYLE = {
-  neutral: 'border-zinc-700 bg-zinc-900 text-zinc-300',
-  success: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200',
-  failure: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
-};
+type Message = { tone: 'info' | 'success' | 'failure'; text: string } | null;
 
 /** "P1M" → "per month". A null period is a one-time (lifetime) purchase. */
 function describePeriod(period: string | null): string {
-  if (!period) return 'one-time payment';
+  if (!period) return 'one-time';
   if (period === 'P1M') return 'per month';
   if (period === 'P1Y') return 'per year';
   if (period === 'P1W') return 'per week';
@@ -49,16 +39,17 @@ function describePeriod(period: string | null): string {
 }
 
 function formatDate(value: string | Date): string {
-  return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  // English, like the rest of the interface, whatever the browser's locale.
+  return new Date(value).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export default function History() {
+export default function HistoryPage() {
   const [access, setAccess] = useState<AccessState>({ kind: 'loading' });
   const [offering, setOffering] = useState<Offering | null>(null);
   const [status, setStatus] = useState<ProStatus | null>(null);
-  const [notice, setNotice] = useState<Notice>(null);
+  const [message, setMessage] = useState<Message>(null);
   const [busy, setBusy] = useState(false);
 
   /**
@@ -137,21 +128,21 @@ export default function History() {
     if (outcome.kind === 'purchased') {
       const confirmed = await confirmAccessAfterPurchase(outcome.status);
       const testNote = outcome.status.store === 'test_store' ? ' This was a Test Store transaction: no card was charged.' : '';
-      setNotice(
+      setMessage(
         confirmed
           ? { tone: 'success', text: `Pro unlocked.${testNote}` }
           : {
-              tone: 'neutral',
+              tone: 'info',
               text: `The purchase went through, but the server has not confirmed access yet. Reload in a moment.${testNote}`,
             },
       );
     } else if (outcome.kind === 'cancelled') {
-      setNotice({ tone: 'neutral', text: 'Purchase cancelled. Nothing was charged and your access is unchanged.' });
+      setMessage({ tone: 'info', text: 'Purchase cancelled. Nothing was charged and your access is unchanged.' });
     } else if (outcome.kind === 'failed') {
-      setNotice({ tone: 'failure', text: outcome.simulated ? outcome.message : `The purchase failed: ${outcome.message}` });
+      setMessage({ tone: 'failure', text: outcome.simulated ? outcome.message : `The purchase failed: ${outcome.message}` });
     } else {
-      setNotice({
-        tone: 'neutral',
+      setMessage({
+        tone: 'info',
         text: 'The designed paywall is not available right now. Choose a plan from the list below instead.',
       });
     }
@@ -160,7 +151,7 @@ export default function History() {
   async function openPaywall() {
     if (!offering) return;
     setBusy(true);
-    setNotice(null);
+    setMessage(null);
     try {
       await handleOutcome(await presentPaywall(offering));
     } finally {
@@ -170,7 +161,7 @@ export default function History() {
 
   async function buy(rcPackage: Package) {
     setBusy(true);
-    setNotice(null);
+    setMessage(null);
     try {
       await handleOutcome(await purchasePackage(rcPackage));
     } finally {
@@ -179,43 +170,39 @@ export default function History() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <header className="mb-10">
-        <Link href="/" className="text-xs text-zinc-500 transition hover:text-zinc-300">
-          Back to diagnosis
-        </Link>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Diagnosis history</h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Pro keeps every diagnosis you run, so you can see when a configuration broke and prove when it was
-          fixed.
-        </p>
-      </header>
-
-      {notice && (
-        <p className={`mb-6 rounded-md border px-4 py-3 text-sm ${NOTICE_STYLE[notice.tone]}`}>{notice.text}</p>
+    <AppShell
+      title="Diagnosis history"
+      intro={<p>Pro keeps every diagnosis you run, so you can see when a configuration broke and prove when it was fixed.</p>}
+    >
+      {message && (
+        <div className="mt-8">
+          <Notice tone={message.tone}>{message.text}</Notice>
+        </div>
       )}
 
-      {access.kind === 'loading' && <p className="text-sm text-zinc-500">Checking your access…</p>}
+      {access.kind === 'loading' && <p className="mt-10 text-muted">Checking your access…</p>}
 
       {access.kind === 'disabled' && (
-        <p className="rounded-md border border-zinc-800 px-4 py-3 text-sm text-zinc-400">
-          Diagnosis history is not enabled on this deployment yet. Diagnosis and comparison stay free and work
-          as usual.
-        </p>
+        <div className="mt-10">
+          <Notice>
+            Diagnosis history is not enabled on this deployment yet. Diagnosis and comparison stay free and work as
+            usual.
+          </Notice>
+        </div>
       )}
 
       {access.kind === 'error' && (
-        <p className="rounded-md border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {access.message}
-        </p>
+        <div className="mt-10">
+          <Notice tone="failure">{access.message}</Notice>
+        </div>
       )}
 
       {access.kind === 'locked' && (
-        <section className="rounded-lg border border-zinc-800 p-6">
-          <h2 className="text-lg font-semibold text-zinc-100">
-            {access.reason === 'expired' ? 'Your Pro access has expired' : 'Keep every diagnosis with Pro'}
+        <section aria-labelledby="offer-heading" className="mt-12">
+          <h2 id="offer-heading" className="font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">
+            {access.reason === 'expired' ? 'Your Pro access has expired.' : 'Keep every diagnosis with Pro.'}
           </h2>
-          <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+          <p className="mt-5 max-w-[65ch]">
             {access.reason === 'expired'
               ? `Access ended${access.expiredAt ? ` on ${formatDate(access.expiredAt)}` : ''}. Your history is kept; renew to see it again.`
               : 'Every diagnosis you run is saved automatically. Diagnosis and before/after comparison stay free.'}
@@ -223,42 +210,53 @@ export default function History() {
 
           {offering ? (
             <>
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <dl className="mt-9 grid border-y-2 border-ink md:grid-cols-3">
                 {offering.availablePackages.map((rcPackage) => {
                   const product = rcPackage.webBillingProduct;
+                  const price = (product.currentPrice.amountMicros / 1_000_000).toFixed(2);
                   return (
-                    <div key={rcPackage.identifier} className="flex flex-col rounded-lg border border-zinc-800 p-4">
-                      <span className="text-sm font-medium text-zinc-200">{product.title}</span>
-                      <span className="mt-2 text-2xl font-semibold text-zinc-50">
-                        {product.currentPrice.formattedPrice}
-                      </span>
-                      <span className="text-xs text-zinc-500">{describePeriod(product.normalPeriodDuration)}</span>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => buy(rcPackage)}
-                        className="mt-4 rounded-md bg-white px-3 py-2 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
-                      >
-                        Buy {product.title}
-                      </button>
+                    <div
+                      key={rcPackage.identifier}
+                      className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-4 border-b border-ink py-6 last:border-b-0 md:block md:border-r md:border-b-0 md:px-7 md:py-8 md:first:pl-0 md:last:border-r-0"
+                    >
+                      <dt className="text-lg font-semibold">{product.title}</dt>
+                      <dd className="md:mt-4">
+                        <div className="flex items-baseline justify-end gap-2 md:justify-start">
+                          <span className="text-sm text-muted">{product.currentPrice.currency}</span>
+                          <span className="font-display text-5xl leading-none font-bold sm:text-6xl">{price}</span>
+                        </div>
+                        <span className="mt-2 block text-right text-sm text-muted md:text-left">
+                          {describePeriod(product.normalPeriodDuration)}
+                        </span>
+                      </dd>
+                      <dd className="col-span-2 md:mt-6">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => buy(rcPackage)}
+                          className="btn-pen min-h-12 w-full px-5 disabled:opacity-60 md:w-auto"
+                        >
+                          Buy {product.title}
+                        </button>
+                      </dd>
                     </div>
                   );
                 })}
-              </div>
+              </dl>
               <button
                 type="button"
                 disabled={busy}
                 onClick={openPaywall}
-                className="mt-4 text-sm text-zinc-400 underline-offset-4 transition hover:text-zinc-200 hover:underline disabled:opacity-50"
+                className="mt-6 min-h-11 text-sm font-semibold underline underline-offset-4 disabled:opacity-60"
               >
                 Compare plans in the paywall
               </button>
             </>
           ) : (
-            <p className="mt-6 text-sm text-zinc-500">No plans are on sale right now.</p>
+            <p className="mt-8 text-muted">No plans are on sale right now.</p>
           )}
 
-          <p className="mt-6 border-t border-zinc-800 pt-4 text-xs text-zinc-500">
+          <p className="mt-6 max-w-[65ch] border-l-4 border-ink pl-4 text-sm leading-relaxed">
             Purchases on this deployment go through RevenueCat Test Store. They are test transactions: no card is
             charged.
           </p>
@@ -266,52 +264,56 @@ export default function History() {
       )}
 
       {access.kind === 'unlocked' && (
-        <section>
-          <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm">
-            <span className="font-medium text-emerald-200">Pro is active</span>
-            <span className="text-zinc-400">
+        <section aria-labelledby="history-heading" className="mt-12">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-l-4 border-triage-green bg-sheet px-4 py-3 text-sm">
+            <span className="font-semibold">Pro is active</span>
+            <span className="text-muted">
               {access.expiresAt === null
                 ? 'Lifetime access'
                 : `${status?.willRenew ? 'Renews' : 'Ends'} on ${formatDate(access.expiresAt)}`}
             </span>
-            {status?.store === 'test_store' && <span className="text-zinc-500">Test Store purchase</span>}
+            {status?.store === 'test_store' && <span className="text-muted">Test Store purchase</span>}
             {status?.managementURL && (
               <a
                 href={status.managementURL}
                 target="_blank"
                 rel="noreferrer"
-                className="ml-auto text-zinc-300 underline-offset-4 hover:underline"
+                className="ml-auto font-semibold underline underline-offset-4"
               >
                 Manage subscription
               </a>
             )}
           </div>
 
+          <h2 id="history-heading" className="mt-10 mb-6 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">
+            Your diagnoses
+          </h2>
+
           {!access.storage ? (
-            <p className="rounded-md border border-zinc-800 px-4 py-6 text-sm text-zinc-400">
-              Your Pro access is confirmed. History storage is not set up on this deployment yet, so new
-              diagnoses are not being saved.
-            </p>
+            <Notice>
+              Your Pro access is confirmed. History storage is not set up on this deployment yet, so new diagnoses are
+              not being saved.
+            </Notice>
           ) : access.reports.length === 0 ? (
-            <p className="rounded-md border border-zinc-800 px-4 py-6 text-sm text-zinc-400">
-              No diagnoses saved yet. <Link href="/" className="text-zinc-200 underline-offset-4 hover:underline">Run one</Link>{' '}
+            <Notice tone="action">
+              No diagnoses saved yet.{' '}
+              <Link href="/diagnose" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
+                Run one
+              </Link>{' '}
               and it will appear here.
-            </p>
+            </Notice>
           ) : (
-            <ol className="space-y-3">
+            <ol className="border-t-2 border-ink">
               {access.reports.map((entry) => (
-                <li key={entry.id} className="rounded-lg border border-zinc-800 px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_STYLE[entry.report.status]}`}
-                    >
-                      {entry.report.status.replace('_', ' ')}
-                    </span>
-                    <span className="text-xs text-zinc-500">{new Date(entry.savedAt).toLocaleString()}</span>
+                <li key={entry.id} className="border-b border-ink py-5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <OutcomeLabel outcome={entry.report.status} />
+                    <span className="text-sm text-muted">{new Date(entry.savedAt).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                   </div>
-                  <p className="mt-2 text-sm text-zinc-200">{entry.report.headline}</p>
-                  <p className="mt-1 break-all font-mono text-xs text-zinc-500">
-                    {entry.report.target.rpcUrl} · expects chain {entry.report.target.expectedChainId}
+                  <p className="mt-2 max-w-[70ch] font-semibold">{entry.report.headline}</p>
+                  <p className="mt-1 text-sm text-muted">
+                    <span className="font-mono break-all">{entry.report.target.rpcUrl}</span>, expects{' '}
+                    {describeChain(entry.report.target.expectedChainId)}
                   </p>
                 </li>
               ))}
@@ -319,6 +321,6 @@ export default function History() {
           )}
         </section>
       )}
-    </main>
+    </AppShell>
   );
 }

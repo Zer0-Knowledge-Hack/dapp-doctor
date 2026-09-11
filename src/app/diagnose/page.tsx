@@ -1,9 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import type { CheckOutcome, DiagnosisReport, OverallStatus } from '@/lib/diagnostics/types';
+import { useEffect, useRef, useState } from 'react';
+import { AppShell } from '@/components/app/AppShell';
+import { Field } from '@/components/app/Field';
+import { Notice } from '@/components/app/Notice';
+import { Report } from '@/components/app/Report';
+import { revealResult } from '@/components/app/revealResult';
+import { Sheet } from '@/components/ui/Sheet';
 import { getOrCreateUserId, isBillingEnabled } from '@/lib/billing/client';
+import type { DiagnosisReport } from '@/lib/diagnostics/types';
 
 /** Set by the API when the request carried a user id: whether the run was kept in history. */
 type HistoryOutcome = { saved: true; id: string } | { saved: false; reason: string };
@@ -43,21 +49,7 @@ const PRESETS: Record<string, { label: string; hint: string; values: FormState }
   },
 };
 
-const STATUS_STYLE: Record<OverallStatus, { text: string; box: string; label: string }> = {
-  READY: { text: 'text-emerald-300', box: 'border-emerald-500/40 bg-emerald-500/10', label: 'READY' },
-  AT_RISK: { text: 'text-amber-300', box: 'border-amber-500/40 bg-amber-500/10', label: 'AT RISK' },
-  BLOCKED: { text: 'text-rose-300', box: 'border-rose-500/40 bg-rose-500/10', label: 'BLOCKED' },
-  NOT_TESTED: { text: 'text-zinc-400', box: 'border-zinc-600/40 bg-zinc-500/10', label: 'NOT TESTED' },
-};
-
-const OUTCOME_STYLE: Record<CheckOutcome, string> = {
-  PASS: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-  WARN: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-  FAIL: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-  NOT_TESTED: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
-};
-
-export default function Home() {
+export default function DiagnosePage() {
   const [form, setForm] = useState<FormState>(PRESETS.broken.values);
   const [report, setReport] = useState<DiagnosisReport | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +58,7 @@ export default function Home() {
   // Which preset the form currently holds. Editing any field clears it, since
   // the form no longer matches the preset.
   const [activePreset, setActivePreset] = useState<string | null>('broken');
+  const demoStarted = useRef(false);
 
   function update(field: keyof FormState, value: string) {
     setActivePreset(null);
@@ -105,185 +98,129 @@ export default function Home() {
     }
   }
 
-  return (
-    <main className="mx-auto max-w-4xl px-6 py-12">
-      <header className="mb-10">
-        <h1 className="text-3xl font-semibold tracking-tight">DApp Doctor</h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Six deterministic, read-only checks on a dApp RPC configuration. No private keys, no
-          seed phrases, no transactions.
-        </p>
-        <nav className="mt-4 flex gap-5 text-xs text-zinc-500">
-          <Link href="/compare" className="transition hover:text-zinc-300">
-            Compare before and after
-          </Link>
-          {isBillingEnabled() && (
-            <Link href="/history" className="transition hover:text-zinc-300">
-              Diagnosis history
-            </Link>
-          )}
-        </nav>
-      </header>
+  function runPreset(key: string) {
+    const preset = PRESETS[key];
+    if (!preset) return;
+    setForm(preset.values);
+    setActivePreset(key);
+    void diagnose(preset.values);
+  }
 
-      <section className="mb-8 flex flex-wrap gap-2">
+  // A new result arrives below the form: bring it into view.
+  useEffect(() => {
+    if (report) revealResult('result-heading');
+  }, [report]);
+
+  // The landing's "Watch it catch a broken one" opens /diagnose?demo=broken:
+  // the demo runs on arrival instead of asking for another click. Guarded so
+  // React's development double-render does not run it twice.
+  useEffect(() => {
+    if (demoStarted.current) return;
+    const demo = new URLSearchParams(window.location.search).get('demo');
+    if (demo && PRESETS[demo]) {
+      demoStarted.current = true;
+      runPreset(demo);
+    }
+    // Runs once on arrival; the preset values are constants.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <AppShell
+      title="Diagnose a dApp"
+      intro={
+        <p>
+          Six read-only checks on the RPC configuration your app runs on. No private keys, no seed phrases, no
+          transactions.
+        </p>
+      }
+    >
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <span className="text-sm font-semibold">Try it on</span>
         {Object.entries(PRESETS).map(([key, preset]) => (
           <button
             key={key}
             type="button"
             // A preset is a demo: one click fills the form and shows the result.
-            // Filling the form alone looked like nothing happened, because the
-            // page already opens on the broken preset.
-            onClick={() => {
-              setForm(preset.values);
-              setActivePreset(key);
-              void diagnose(preset.values);
-            }}
+            onClick={() => runPreset(key)}
             disabled={running}
             aria-pressed={activePreset === key}
-            className={`rounded-md border px-3 py-1.5 text-sm transition disabled:opacity-50 ${
-              activePreset === key
-                ? 'border-zinc-300 bg-zinc-800 text-white'
-                : 'border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white'
-            }`}
             title={preset.hint}
+            className="btn-plain min-h-11 px-4 text-sm disabled:opacity-60"
           >
             {preset.label}
           </button>
         ))}
-      </section>
+      </div>
 
-      <section className="grid gap-4 rounded-lg border border-zinc-800 p-5 sm:grid-cols-2">
-        <Field label="Primary RPC" value={form.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
-        <Field
-          label="Fallback RPC (optional)"
-          value={form.fallbackRpcUrl}
-          onChange={(v) => update('fallbackRpcUrl', v)}
-        />
-        <Field
-          label="Expected chain ID"
-          value={form.expectedChainId}
-          onChange={(v) => update('expectedChainId', v)}
-        />
-        <Field
-          label="Contract address (optional)"
-          value={form.contractAddress}
-          onChange={(v) => update('contractAddress', v)}
-        />
-        <div className="sm:col-span-2">
+      <Sheet className="mt-6 px-5 py-6 sm:px-8 sm:py-8">
+        <form
+          className="grid gap-5 sm:grid-cols-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void diagnose();
+          }}
+        >
+          <Field label="Primary RPC" value={form.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
           <Field
-            label="Critical read (optional)"
-            value={form.criticalReadSignature}
-            onChange={(v) => update('criticalReadSignature', v)}
+            label="Fallback RPC (optional)"
+            value={form.fallbackRpcUrl}
+            onChange={(v) => update('fallbackRpcUrl', v)}
           />
-        </div>
-        <div className="sm:col-span-2">
-          <button
-            type="button"
-            onClick={() => diagnose()}
-            disabled={running}
-            className="rounded-md bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
-          >
-            {running ? 'Diagnosing...' : 'Diagnose'}
-          </button>
-        </div>
-      </section>
+          <Field
+            label="Expected chain ID"
+            value={form.expectedChainId}
+            onChange={(v) => update('expectedChainId', v)}
+          />
+          <Field
+            label="Contract address (optional)"
+            value={form.contractAddress}
+            onChange={(v) => update('contractAddress', v)}
+          />
+          <div className="sm:col-span-2">
+            <Field
+              label="Critical read (optional)"
+              value={form.criticalReadSignature}
+              onChange={(v) => update('criticalReadSignature', v)}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <button type="submit" disabled={running} className="btn-pen min-h-12 px-6 disabled:opacity-60">
+              {running ? 'Diagnosing…' : 'Diagnose'}
+            </button>
+          </div>
+        </form>
+      </Sheet>
 
       {error && (
-        <p className="mt-6 rounded-md border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
-          {error}
-        </p>
+        <div className="mt-8">
+          <Notice tone="failure">{error}</Notice>
+        </div>
       )}
 
       {report && <Report report={report} />}
 
       {report && history?.saved && (
-        <p className="mt-4 text-xs text-zinc-500">
-          Saved to your{' '}
-          <Link href="/history" className="text-zinc-300 underline-offset-4 hover:underline">
-            diagnosis history
-          </Link>
-          .
-        </p>
+        <div className="mt-6">
+          <Notice tone="success">
+            Saved to your{' '}
+            <Link href="/history" prefetch={false} className="font-semibold underline underline-offset-4">
+              diagnosis history
+            </Link>
+            .
+          </Notice>
+        </div>
       )}
       {report && history && !history.saved && history.reason === 'never-purchased' && (
-        <p className="mt-4 text-xs text-zinc-500">
-          <Link href="/history" className="text-zinc-300 underline-offset-4 hover:underline">
-            Keep every diagnosis with Pro
-          </Link>
-          . Diagnosis stays free.
-        </p>
+        <div className="mt-6">
+          <Notice tone="action">
+            <Link href="/history" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
+              Keep every diagnosis with Pro
+            </Link>
+            . Diagnosis stays free.
+          </Notice>
+        </div>
       )}
-    </main>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block text-sm">
-      <span className="mb-1.5 block text-zinc-400">{label}</span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        spellCheck={false}
-        className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs text-zinc-100 outline-none transition focus:border-zinc-500"
-      />
-    </label>
-  );
-}
-
-function Report({ report }: { report: DiagnosisReport }) {
-  const style = STATUS_STYLE[report.status];
-  return (
-    <section className="mt-8">
-      <div className={`rounded-lg border px-5 py-4 ${style.box}`}>
-        <div className={`text-xs font-semibold tracking-widest ${style.text}`}>{style.label}</div>
-        <p className="mt-1.5 text-sm text-zinc-200">{report.headline}</p>
-        <p className="mt-2 text-xs text-zinc-500">
-          {report.checks.length} checks in {report.durationMs} ms ·{' '}
-          {new Date(report.startedAt).toLocaleString()}
-        </p>
-      </div>
-
-      <ol className="mt-4 space-y-3">
-        {report.checks.map((check) => (
-          <li key={check.id} className="rounded-lg border border-zinc-800 px-4 py-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold tracking-wider ${OUTCOME_STYLE[check.outcome]}`}
-              >
-                {check.outcome.replace('_', ' ')}
-              </span>
-              <span className="text-sm font-medium text-zinc-200">{check.title}</span>
-              <span className="ml-auto text-[11px] text-zinc-600">{check.durationMs} ms</span>
-            </div>
-            <p className="mt-2 text-sm text-zinc-300">{check.summary}</p>
-            {check.action && (
-              <p className="mt-2 border-l-2 border-zinc-700 pl-3 text-sm text-zinc-400">
-                <span className="font-medium text-zinc-300">What to do: </span>
-                {check.action}
-              </p>
-            )}
-            {check.observed && (
-              <details className="mt-2">
-                <summary className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-400">
-                  Observed data
-                </summary>
-                <pre className="mt-1.5 overflow-x-auto rounded bg-zinc-900/80 p-2.5 text-[11px] text-zinc-400">
-                  {JSON.stringify(check.observed, null, 2)}
-                </pre>
-              </details>
-            )}
-          </li>
-        ))}
-      </ol>
-    </section>
+    </AppShell>
   );
 }
