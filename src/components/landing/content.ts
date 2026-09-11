@@ -25,6 +25,7 @@ export const landing = {
       { label: 'Diagnose', href: '/diagnose', availability: 'LIVE' },
       { label: 'Compare', href: '/compare', availability: 'LIVE' },
       { label: 'Pro', href: '/history', availability: 'LIVE' },
+      { label: 'Heartbeat', href: '/heartbeat', availability: 'LIVE' },
       { label: 'Source code', href: repository, availability: 'LIVE' },
     ],
   },
@@ -137,6 +138,7 @@ export const landing = {
     navigationLabel: 'Footer navigation',
     links: [
       { label: 'Diagnose', href: '/diagnose', availability: 'LIVE' },
+      { label: 'Listen to a chain', href: '/heartbeat', availability: 'LIVE' },
       { label: 'Source code', href: repository, availability: 'LIVE' },
     ],
   },

@@ -15,8 +15,11 @@ const WIDTH = 720;
 const HEIGHT = 120;
 const BASELINE = 72;
 
-/** One PQRST complex, as (dx, dy) from the baseline. Negative dy goes up. */
-const BEAT: Array<[number, number]> = [
+/**
+ * One PQRST complex, as (dx, dy) from the baseline. Negative dy goes up.
+ * Exported so the live heartbeat monitor draws the very same beat.
+ */
+export const BEAT: Array<[number, number]> = [
   [0, 0], [10, 0], [15, -8], [20, 0], [26, 0], [29, 6], [34, -56],
   [39, 14], [43, 0], [52, 0], [60, -14], [68, 0], [80, 0],
 ];

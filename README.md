@@ -19,6 +19,7 @@ Built for the **Burning Token** hackathon by NERDCONF (September 2026).
 | Public deployment | ✅ live |
 | DApp Doctor Pro: diagnosis history, sold with RevenueCat | ✅ live (Test Store purchases) |
 | Launch Check (`/launch`): the stricter bar before mainnet, a Pro feature | ✅ live |
+| RPC Heartbeat (`/heartbeat`): listen to a chain's pulse | ✅ live |
 | MCP server for agents (`/api/mcp`) | ✅ live |
 | Config reader (paste a `.env` or config) | 🟡 built and tested; not yet in the web UI |
 | Nebius — AI root-cause analysis | ✖ not entered: the credits could not be redeemed from our country |
@@ -146,6 +147,27 @@ states — HTTP only, no WebSocket connections — and nothing it does not.
 The rules are a fixed table, like the checks. A rule that cannot be evaluated
 is `NOT_TESTED`, and counts as risk.
 
+## RPC Heartbeat
+
+`/heartbeat` puts a stethoscope on a blockchain:
+- **Every beat is a new block.** Nothing else makes the trace spike.
+- **The spike's height is how many transactions the block carried.**
+- **The beep's pitch is how full the block was.**
+- **An RPC that stops answering goes flatline**, with the long tone, and a
+  defibrillator you can try. Three failed shocks and the monitor calls the time
+  of death.
+- **A node that answers while its chain stops moving is in a coma.**
+
+The heart rate is blocks per minute, from the chain's own block numbers and
+timestamps: Base beats about 30, Ethereum about 5.
+
+It runs entirely in the browser:
+- The page reads the RPC directly with `eth_chainId` and `eth_getBlockByNumber`,
+  so a pasted URL, and any key in it, never reaches our servers.
+- A hidden tab stops asking.
+- The "dead RPC" patient uses an `.invalid` address, which never resolves, so
+  its flatline is real rather than staged.
+
 ## Running it
 
 This project uses **pnpm**. Do not use npm or yarn: the lockfile is
@@ -165,8 +187,8 @@ pnpm verify
 
 It runs, in order: `typecheck`, `build`, `ssrf` (the guard), `billing`
 (entitlement rules), `intake` (the config reader), `mcp` (the agent tools and
-secret refusal), `launch` (the Launch Check rule table) and `smoke` (five
-scenarios against Base, live). The smoke test
+secret refusal), `launch` (the Launch Check rule table), `heartbeat` (the
+monitor's vital signs) and `smoke` (five scenarios against Base, live). The smoke test
 hits real public RPCs, so it can fail because a provider is down rather than
 because of the code.
 
@@ -238,6 +260,7 @@ src/
     compare/              before/after
     history/              DApp Doctor Pro: plans and saved diagnoses
     launch/               Launch Check (Pro)
+    heartbeat/            RPC Heartbeat, read from the browser
     api/diagnose          one diagnosis
     api/compare           two diagnoses and their delta
     api/history           a paying user's saved diagnoses
@@ -250,6 +273,7 @@ src/
   lib/
     diagnostics/          the engine: checks, gating, verdicts, SSRF guard
     launch/               Launch Check rules on top of the engine
+    heartbeat/            vital signs from a block, and the browser-side RPC reads
     intake/extract.ts     reads RPC URL, chain and contract from any config text
     billing/              RevenueCat: browser purchase flow, server entitlements
     history/store.ts      Upstash Redis storage, redacted before writing
@@ -270,6 +294,7 @@ decides whether a check passed.
 | Challenge | How it is covered | Status |
 |---|---|---|
 | **Subscriptions — RevenueCat** | DApp Doctor Pro: offering with monthly, yearly and lifetime plans, the `daap_doctor_pro` entitlement gating Launch Check and diagnosis history, verified server-side. Handles successful, cancelled and failed purchases and expired access. | ✅ live, Test Store |
+| **Fun Build — NERDCONF** | RPC Heartbeat: a chain's blocks as a heartbeat you can hear, a real flatline when an RPC dies, and a defibrillator. No sponsor technology. | ✅ live |
 | **Applied AI — Nebius** | Not entered: the Token Factory credits could not be redeemed from our country. | ✖ not entered |
 
 Deep Research (Linkup), Multiplayer (Convex) and Workflows (Render) are not
