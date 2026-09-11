@@ -88,7 +88,7 @@ export async function runDiagnosis(target: DiagnoseTarget): Promise<DiagnosisRep
  * NOT_TESTED counts as risk, never as passing: not having tested something
  * is never evidence that it works.
  */
-export function aggregateStatus(checks: CheckResult[]): OverallStatus {
+export function aggregateStatus(checks: ReadonlyArray<Pick<CheckResult, 'outcome' | 'critical'>>): OverallStatus {
   if (checks.every((check) => check.outcome === 'NOT_TESTED')) return 'NOT_TESTED';
   if (checks.some((check) => check.critical && check.outcome === 'FAIL')) return 'BLOCKED';
   if (checks.some((check) => check.outcome !== 'PASS')) return 'AT_RISK';

@@ -104,6 +104,7 @@ export const landing = {
     body: 'Every diagnosis is saved, so you can see when a configuration broke and prove when it was fixed.',
     features: [
       { text: 'Saved diagnosis history.', availability: 'LIVE' },
+      { text: 'Launch Check: a stricter bar before you go to mainnet.', availability: 'LIVE' },
       { text: 'Saved setups you re-check in one click, with a timeline of when each one broke and when it recovered.', availability: 'NOT_YET' },
     ],
     // Snapshot of the brief. Confirm against RevenueCat before integration.

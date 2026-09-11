@@ -207,6 +207,10 @@ export default function DiagnosePage() {
             <Link href="/history" prefetch={false} className="font-semibold underline underline-offset-4">
               diagnosis history
             </Link>
+            . Launching on mainnet?{' '}
+            <Link href="/launch" prefetch={false} className="font-semibold underline underline-offset-4">
+              Run Launch Check
+            </Link>
             .
           </Notice>
         </div>
@@ -215,7 +219,7 @@ export default function DiagnosePage() {
         <div className="mt-6">
           <Notice tone="action">
             <Link href="/history" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
-              Keep every diagnosis with Pro
+              Keep every diagnosis and check your launch with Pro
             </Link>
             . Diagnosis stays free.
           </Notice>

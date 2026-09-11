@@ -9,8 +9,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke.mts",
-    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm billing && pnpm intake && pnpm mcp && pnpm smoke",
+    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm billing && pnpm intake && pnpm mcp && pnpm launch && pnpm smoke",
     "ssrf": "tsx scripts/ssrf.mts",
+    "launch": "tsx scripts/launch.mts",
     "billing": "tsx scripts/billing.mts",
     "intake": "tsx scripts/intake.mts",
     "mcp": "tsx scripts/mcp.mts"

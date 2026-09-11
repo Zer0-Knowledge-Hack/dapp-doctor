@@ -105,10 +105,10 @@ default your agent has for adding attribution lines.
 ## 5. Before merging
 
 ```bash
-pnpm verify   # typecheck, build, ssrf, billing, intake, mcp, smoke — in that order
+pnpm verify   # typecheck, build, ssrf, billing, intake, mcp, launch, smoke — in that order
 ```
 
-All seven stages must pass. Run `pnpm lint` and `pnpm audit --prod` too before
+All eight stages must pass. Run `pnpm lint` and `pnpm audit --prod` too before
 publishing anything. The smoke test hits real public RPCs, so it can fail
 because a provider is down rather than because of your code — if it fails,
 look at which scenario before assuming you broke something.
@@ -122,7 +122,7 @@ the goal is cash prizes.
 
 | Track | Status | Module | Hard requirement (verbatim from the brief) |
 |---|---|---|---|
-| RevenueCat (Subscriptions) | **Active — live** | `src/lib/billing/`, `/history` | Integrate a RevenueCat SDK; configure an offer and use entitlements to control access to a useful feature; show a successful purchase, a failed one and expired access |
+| RevenueCat (Subscriptions) | **Active — live** | `src/lib/billing/`, `src/lib/launch/`, `/history`, `/launch` | Integrate a RevenueCat SDK; configure an offer and use entitlements to control access to a useful feature; show a successful purchase, a failed one and expired access |
 | Nebius (Applied AI) | **On hold** — credits could not be redeemed from our country | `src/lib/ai/` (not wired in) | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
 
 Not entered: **Linkup** (its requirement is iterative research that stores

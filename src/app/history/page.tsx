@@ -205,7 +205,7 @@ export default function HistoryPage() {
           <p className="mt-5 max-w-[65ch]">
             {access.reason === 'expired'
               ? `Access ended${access.expiredAt ? ` on ${formatDate(access.expiredAt)}` : ''}. Your history is kept; renew to see it again.`
-              : 'Every diagnosis you run is saved automatically. Diagnosis and before/after comparison stay free.'}
+              : 'Every diagnosis you run is saved automatically, and Launch Check holds your configuration to a stricter bar before you go to mainnet. Diagnosis and before/after comparison stay free.'}
           </p>
 
           {offering ? (
@@ -273,6 +273,9 @@ export default function HistoryPage() {
                 : `${status?.willRenew ? 'Renews' : 'Ends'} on ${formatDate(access.expiresAt)}`}
             </span>
             {status?.store === 'test_store' && <span className="text-muted">Test Store purchase</span>}
+            <Link href="/launch" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
+              Run Launch Check
+            </Link>
             {status?.managementURL && (
               <a
                 href={status.managementURL}
