@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { redactRpcUrl } from '../diagnostics/rpc';
 import type { DiagnosisReport } from '../diagnostics/types';
 
 /**
@@ -10,9 +11,25 @@ import type { DiagnosisReport } from '../diagnostics/types';
  *
  * The user id is a random UUID the browser keeps. It works as a bearer
  * credential for reading the history: unguessable, but anyone holding it can
- * read. That is acceptable for diagnosis reports, whose RPC URLs are already
- * redacted, and it is why ids are validated as random tokens upstream.
+ * read. That is why ids are validated as random tokens upstream, and why RPC
+ * URLs are redacted before a report is stored: the check summaries already
+ * redact them, but `report.target` holds the URL exactly as the user typed it,
+ * and providers put API keys in the path or query. We never keep those keys.
  */
+
+/** A copy of the report with every user-supplied URL stripped of credentials. */
+function redactForStorage(report: DiagnosisReport): DiagnosisReport {
+  return {
+    ...report,
+    target: {
+      ...report.target,
+      rpcUrl: redactRpcUrl(report.target.rpcUrl),
+      ...(report.target.fallbackRpcUrl
+        ? { fallbackRpcUrl: redactRpcUrl(report.target.fallbackRpcUrl) }
+        : {}),
+    },
+  };
+}
 
 /** Keep the most recent runs. History is for comparing, not archiving. */
 const MAX_REPORTS = 50;
@@ -57,7 +74,7 @@ export async function saveReport(userId: string, report: DiagnosisReport): Promi
   const entry: StoredReport = {
     id: crypto.randomUUID(),
     savedAt: new Date().toISOString(),
-    report,
+    report: redactForStorage(report),
   };
 
   // LPUSH + LTRIM in one pipeline, so the list never grows past the cap even

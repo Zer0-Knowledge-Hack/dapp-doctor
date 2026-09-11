@@ -1,3 +1,5 @@
+import { PRO_ENTITLEMENT_ID } from './constants';
+
 /**
  * Server-side entitlement verification against RevenueCat.
  *
@@ -10,7 +12,6 @@
  */
 
 const REVENUECAT_API = 'https://api.revenuecat.com/v1';
-const DEFAULT_ENTITLEMENT_ID = 'pro';
 const TIMEOUT_MS = 5_000;
 
 /**
@@ -64,8 +65,6 @@ export async function checkEntitlement(appUserId: string): Promise<EntitlementCh
   const apiKey = process.env.REVENUECAT_SECRET_API_KEY;
   if (!apiKey) return { active: false, reason: 'not-configured' };
 
-  const entitlementId = process.env.REVENUECAT_ENTITLEMENT_ID || DEFAULT_ENTITLEMENT_ID;
-
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -82,7 +81,7 @@ export async function checkEntitlement(appUserId: string): Promise<EntitlementCh
       subscriber?: { entitlements?: Record<string, RevenueCatEntitlement> };
     };
 
-    const entitlement = body.subscriber?.entitlements?.[entitlementId];
+    const entitlement = body.subscriber?.entitlements?.[PRO_ENTITLEMENT_ID];
     if (!entitlement) return { active: false, reason: 'never-purchased' };
 
     return isEntitlementActive(entitlement)

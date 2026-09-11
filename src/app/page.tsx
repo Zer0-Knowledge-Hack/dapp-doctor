@@ -3,6 +3,10 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import type { CheckOutcome, DiagnosisReport, OverallStatus } from '@/lib/diagnostics/types';
+import { getOrCreateUserId, isBillingEnabled } from '@/lib/billing/client';
+
+/** Set by the API when the request carried a user id: whether the run was kept in history. */
+type HistoryOutcome = { saved: true; id: string } | { saved: false; reason: string };
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
@@ -58,6 +62,7 @@ export default function Home() {
   const [report, setReport] = useState<DiagnosisReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [history, setHistory] = useState<HistoryOutcome | null>(null);
 
   function update(field: keyof FormState, value: string) {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -66,11 +71,14 @@ export default function Home() {
   async function diagnose() {
     setRunning(true);
     setError(null);
+    setHistory(null);
     try {
+      // With billing on, the run carries the user id so the server can keep it
+      // in history. The server decides whether this user may have history.
       const response = await fetch('/api/diagnose', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(isBillingEnabled() ? { ...form, userId: getOrCreateUserId() } : form),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -78,6 +86,7 @@ export default function Home() {
         setReport(null);
       } else {
         setReport(payload as DiagnosisReport);
+        setHistory((payload as { history?: HistoryOutcome }).history ?? null);
       }
     } catch {
       setError('Could not reach the diagnostic engine.');
@@ -95,12 +104,16 @@ export default function Home() {
           Six deterministic, read-only checks on a dApp RPC configuration. No private keys, no
           seed phrases, no transactions.
         </p>
-        <Link
-          href="/compare"
-          className="mt-4 inline-block text-xs text-zinc-500 transition hover:text-zinc-300"
-        >
-          Compare before and after →
-        </Link>
+        <nav className="mt-4 flex gap-5 text-xs text-zinc-500">
+          <Link href="/compare" className="transition hover:text-zinc-300">
+            Compare before and after
+          </Link>
+          {isBillingEnabled() && (
+            <Link href="/history" className="transition hover:text-zinc-300">
+              Diagnosis history
+            </Link>
+          )}
+        </nav>
       </header>
 
       <section className="mb-8 flex flex-wrap gap-2">
@@ -164,6 +177,24 @@ export default function Home() {
       )}
 
       {report && <Report report={report} />}
+
+      {report && history?.saved && (
+        <p className="mt-4 text-xs text-zinc-500">
+          Saved to your{' '}
+          <Link href="/history" className="text-zinc-300 underline-offset-4 hover:underline">
+            diagnosis history
+          </Link>
+          .
+        </p>
+      )}
+      {report && history && !history.saved && history.reason === 'never-purchased' && (
+        <p className="mt-4 text-xs text-zinc-500">
+          <Link href="/history" className="text-zinc-300 underline-offset-4 hover:underline">
+            Keep every diagnosis with Pro
+          </Link>
+          . Diagnosis stays free.
+        </p>
+      )}
     </main>
   );
 }
