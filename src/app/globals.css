@@ -1,19 +1,158 @@
 @import "tailwindcss";
 
+/*
+ * DApp Doctor — clinic punk.
+ *
+ * Colour carries meaning and nothing else:
+ *   paper + grid   ECG chart paper, the ground everything sits on
+ *   ink            pure black, for borders and type
+ *   pen            ballpoint blue, only where the user acts or is told to act
+ *   triage         red / amber / green, only for a check or diagnosis status
+ */
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --paper: #fff1ee;
+  --grid-fine: rgba(226, 88, 72, 0.13);
+  --grid-major: rgba(226, 88, 72, 0.3);
+  --ink: #000000;
+  --muted: #5b5451;
+  --sheet: #ffffff;
+  --pen: #1b3bd1;
+  --triage-red: #e8231e;
+  --triage-amber: #f5a400;
+  --triage-green: #0fa85a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-sheet: var(--sheet);
+  --color-pen: var(--pen);
+  --color-triage-red: var(--triage-red);
+  --color-triage-amber: var(--triage-amber);
+  --color-triage-green: var(--triage-green);
+  --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
+  --font-stamp: var(--font-big-shoulders-stencil), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* ECG paper: a 1 mm grid inside a heavier 5 mm grid. */
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-fine) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--pen);
+  outline-offset: 3px;
+}
+
+@layer components {
+  /* A sheet of chart paper pinned to the board: the two primary surfaces only. */
+  .sheet {
+    background: var(--sheet);
+    border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  /* The main action. Pressing it visibly pushes it into the page. */
+  .btn-pen {
+    background: var(--pen);
+    color: #fff;
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    font-weight: 700;
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .btn-pen:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  .btn-pen:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  .btn-plain {
+    background: var(--sheet);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    font-weight: 600;
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .btn-plain:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+  .btn-plain[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .field {
+    background: var(--sheet);
+    border: 2px solid var(--ink);
+    font-family: var(--font-mono);
+  }
+  .field:focus {
+    outline: 3px solid var(--pen);
+    outline-offset: 0;
+  }
+}
+
+/* The trace draws once when a new rhythm arrives. */
+@keyframes ecg-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.ecg-trace {
+  stroke-dasharray: 1;
+  animation: ecg-draw 1.4s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+
+/* Six beats in five seconds: a steady illustrative rhythm, not a live feed. */
+@keyframes ecg-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-720px); }
+}
+.ecg-track {
+  animation: ecg-scroll 5s linear infinite;
+}
+.ecg-monitor:has(input:checked) .ecg-track {
+  animation-play-state: paused;
+}
+
+/* A rubber stamp lands: brief overshoot, then settles at an angle. */
+@keyframes stamp-land {
+  from { transform: rotate(-7deg) scale(1.35); opacity: 0; }
+  to { transform: rotate(-7deg) scale(1); opacity: 1; }
+}
+.stamp {
+  transform: rotate(-7deg);
+  animation: stamp-land 180ms ease-out both;
+  mix-blend-mode: multiply;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecg-track,
+  .ecg-trace,
+  .stamp {
+    animation: none;
+  }
+  .btn-pen,
+  .btn-plain {
+    transition: none;
+  }
+  .ecg-motion-control {
+    display: none;
+  }
 }
