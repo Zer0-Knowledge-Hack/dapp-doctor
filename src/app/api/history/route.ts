@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'userId is missing or malformed.' }, { status: 400 });
   }
 
-  if (!isBillingConfigured() || !isHistoryConfigured()) {
+  if (!isBillingConfigured()) {
     return NextResponse.json({ error: 'Diagnosis history is not enabled on this deployment.' }, { status: 503 });
   }
 
@@ -43,10 +43,20 @@ export async function GET(request: Request) {
     );
   }
 
+  // Access and storage are separate concerns. A paying user is told they are
+  // Pro even while storage is not set up, rather than being shown a paywall
+  // they have already paid through.
+  if (!isHistoryConfigured()) {
+    return NextResponse.json(
+      { reports: [], storage: false, access: { expiresAt: entitlement.expiresAt } },
+      { headers: { 'cache-control': 'no-store' } },
+    );
+  }
+
   try {
     const reports = await listReports(userId);
     return NextResponse.json(
-      { reports, access: { expiresAt: entitlement.expiresAt } },
+      { reports, storage: true, access: { expiresAt: entitlement.expiresAt } },
       { headers: { 'cache-control': 'no-store' } },
     );
   } catch {

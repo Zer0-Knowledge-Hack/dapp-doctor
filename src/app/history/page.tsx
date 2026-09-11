@@ -21,7 +21,7 @@ type AccessState =
   | { kind: 'disabled' }
   | { kind: 'error'; message: string }
   | { kind: 'locked'; reason: string; message: string; expiredAt?: string }
-  | { kind: 'unlocked'; reports: StoredReport[]; expiresAt: string | null };
+  | { kind: 'unlocked'; reports: StoredReport[]; expiresAt: string | null; storage: boolean };
 
 type Notice = { tone: 'neutral' | 'success' | 'failure'; text: string } | null;
 
@@ -72,7 +72,14 @@ export default function History() {
         cache: 'no-store',
       });
       const payload = await response.json();
-      if (response.ok) return { kind: 'unlocked', reports: payload.reports, expiresAt: payload.access?.expiresAt ?? null };
+      if (response.ok) {
+        return {
+          kind: 'unlocked',
+          reports: payload.reports,
+          expiresAt: payload.access?.expiresAt ?? null,
+          storage: payload.storage !== false,
+        };
+      }
       if (response.status === 402) {
         return { kind: 'locked', reason: payload.reason, message: payload.error, expiredAt: payload.expiredAt };
       }
@@ -277,7 +284,12 @@ export default function History() {
             )}
           </div>
 
-          {access.reports.length === 0 ? (
+          {!access.storage ? (
+            <p className="rounded-md border border-zinc-800 px-4 py-6 text-sm text-zinc-400">
+              Your Pro access is confirmed. History storage is not set up on this deployment yet, so new
+              diagnoses are not being saved.
+            </p>
+          ) : access.reports.length === 0 ? (
             <p className="rounded-md border border-zinc-800 px-4 py-6 text-sm text-zinc-400">
               No diagnoses saved yet. <Link href="/" className="text-zinc-200 underline-offset-4 hover:underline">Run one</Link>{' '}
               and it will appear here.
