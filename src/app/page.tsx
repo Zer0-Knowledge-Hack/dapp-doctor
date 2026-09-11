@@ -63,12 +63,21 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState<HistoryOutcome | null>(null);
+  // Which preset the form currently holds. Editing any field clears it, since
+  // the form no longer matches the preset.
+  const [activePreset, setActivePreset] = useState<string | null>('broken');
 
   function update(field: keyof FormState, value: string) {
+    setActivePreset(null);
     setForm((previous) => ({ ...previous, [field]: value }));
   }
 
-  async function diagnose() {
+  /**
+   * Runs a diagnosis. Takes the values explicitly so a preset can run the
+   * moment it is chosen: state set in the same click would not be readable
+   * here yet.
+   */
+  async function diagnose(values: FormState = form) {
     setRunning(true);
     setError(null);
     setHistory(null);
@@ -78,7 +87,7 @@ export default function Home() {
       const response = await fetch('/api/diagnose', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(isBillingEnabled() ? { ...form, userId: getOrCreateUserId() } : form),
+        body: JSON.stringify(isBillingEnabled() ? { ...values, userId: getOrCreateUserId() } : values),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -121,12 +130,21 @@ export default function Home() {
           <button
             key={key}
             type="button"
+            // A preset is a demo: one click fills the form and shows the result.
+            // Filling the form alone looked like nothing happened, because the
+            // page already opens on the broken preset.
             onClick={() => {
               setForm(preset.values);
-              setReport(null);
-              setError(null);
+              setActivePreset(key);
+              void diagnose(preset.values);
             }}
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            disabled={running}
+            aria-pressed={activePreset === key}
+            className={`rounded-md border px-3 py-1.5 text-sm transition disabled:opacity-50 ${
+              activePreset === key
+                ? 'border-zinc-300 bg-zinc-800 text-white'
+                : 'border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white'
+            }`}
             title={preset.hint}
           >
             {preset.label}
@@ -161,7 +179,7 @@ export default function Home() {
         <div className="sm:col-span-2">
           <button
             type="button"
-            onClick={diagnose}
+            onClick={() => diagnose()}
             disabled={running}
             className="rounded-md bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
           >
