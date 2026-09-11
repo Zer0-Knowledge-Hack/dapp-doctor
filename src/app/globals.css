@@ -50,7 +50,14 @@ body {
   background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
 }
 
-:focus-visible {
+/*
+ * Every element reachable with the keyboard shows a visible focus ring.
+ * Elements with tabindex="-1" only ever receive focus from code (the skip
+ * link's target, a result heading brought into view) and cannot be tabbed to,
+ * so they get no ring. This rule sits outside Tailwind's layers, so it beats
+ * any `outline-none` utility; the exclusion has to live here.
+ */
+:focus-visible:not([tabindex="-1"]) {
   outline: 3px solid var(--pen);
   outline-offset: 3px;
 }
@@ -109,13 +116,18 @@ body {
   }
 }
 
-/* The trace draws once when a new rhythm arrives. */
+/*
+ * The trace draws once, left to right, when a new rhythm arrives.
+ * It is revealed with a clip rather than a stroke dash: the strip stretches
+ * horizontally with a non-scaling stroke, and Chromium measures dashes in a
+ * different scale than the stretched path, so on strips wider than 720 px a
+ * dash-drawn trace stopped short of the right edge.
+ */
 @keyframes ecg-draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
 }
 .ecg-trace {
-  stroke-dasharray: 1;
   animation: ecg-draw 1.4s cubic-bezier(0.3, 0.7, 0.2, 1) both;
 }
 

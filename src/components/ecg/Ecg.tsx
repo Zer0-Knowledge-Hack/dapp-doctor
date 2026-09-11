@@ -113,19 +113,18 @@ export function Ecg({ rhythm, className = '', motion }: {
   }
 
   return (
+    // Keyed by rhythm so a new result redraws the strip instead of snapping.
+    // The draw animation clips the whole strip (see .ecg-trace in globals.css).
     <svg
+      key={rhythm}
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       preserveAspectRatio="none"
       role="img"
       aria-label={LABEL[rhythm]}
-      className={className}
+      className={`ecg-trace ${className}`}
     >
-      {/* Keyed by rhythm so a new result redraws the strip instead of snapping. */}
       <path
-        key={rhythm}
         d={pathFor(rhythm)}
-        pathLength={1}
-        className="ecg-trace"
         fill="none"
         stroke="currentColor"
         strokeWidth={3}
