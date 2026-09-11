@@ -9,9 +9,10 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke.mts",
-    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm billing && pnpm smoke",
+    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm billing && pnpm intake && pnpm smoke",
     "ssrf": "tsx scripts/ssrf.mts",
-    "billing": "tsx scripts/billing.mts"
+    "billing": "tsx scripts/billing.mts",
+    "intake": "tsx scripts/intake.mts"
   },
   "dependencies": {
     "@revenuecat/purchases-js": "^1.59.0",
