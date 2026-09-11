@@ -58,6 +58,24 @@ check('localhost refused', localhost.ok, false, localhost.ok ? '' : localhost.re
 const publicHost = await resolvePublicAddresses('mainnet.base.org');
 check('mainnet.base.org allowed', publicHost.ok, true, publicHost.ok ? '' : publicHost.reason);
 
+const subLocalhost = await resolvePublicAddresses('rpc.localhost');
+check('*.localhost refused (RFC 6761 loopback)', subLocalhost.ok, false, subLocalhost.ok ? '' : subLocalhost.reason);
+
+console.log('\n--- dead hostnames must not delay healthy ones ---');
+{
+  // Regression: with dns.lookup, six slow-failing lookups held libuv's thread
+  // pool and mainnet.base.org took 23 s, so a healthy RPC was diagnosed as
+  // "did not answer". Resolution must not queue behind other requests.
+  const dead = Array.from({ length: 6 }, (_, i) =>
+    resolvePublicAddresses(`dead-${i}-${Date.now()}.example-rpc.com`),
+  );
+  const started = Date.now();
+  const healthy = await resolvePublicAddresses('mainnet.base.org');
+  const elapsed = Date.now() - started;
+  check(`healthy host resolves while dead lookups are pending (${elapsed} ms)`, healthy.ok && elapsed < 2000, true);
+  await Promise.all(dead);
+}
+
 console.log('\n--- end to end through rpcCall ---');
 const attacks = [
   'http://169.254.169.254/latest/meta-data/',

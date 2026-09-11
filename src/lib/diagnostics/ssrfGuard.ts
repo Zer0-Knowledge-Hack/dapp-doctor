@@ -1,5 +1,5 @@
 import { isIPv4, isIPv6 } from 'node:net';
-import { lookup as dnsLookup } from 'node:dns/promises';
+import { Resolver } from 'node:dns/promises';
 import type { LookupFunction } from 'node:net';
 
 /**
@@ -141,22 +141,38 @@ export function blockedAddressReason(address: string): string | null {
 }
 
 /**
- * The OS resolver has no timeout of its own, and it runs before the HTTP
- * request, so `rpcCall`'s own timeout does not cover it. Left unbounded, one
- * hostname that never answers hangs the whole request — which on a serverless
- * host means the function is killed and the caller gets nothing at all.
+ * Hostnames are resolved with c-ares (`Resolver`), never `dns.lookup`.
+ *
+ * `dns.lookup` runs getaddrinfo on libuv's thread pool — four threads shared
+ * by the whole process — and a lookup cannot be cancelled. A few hostnames that
+ * are slow to fail (typos, dead domains, or ones sent on purpose) hold every
+ * thread, and a healthy hostname queued behind them stalls: measured at 23 s
+ * for mainnet.base.org behind six dead lookups. The diagnosis then reports
+ * "the RPC did not answer" about an RPC that is fine — confidently wrong, the
+ * one thing this product must never be. c-ares queries DNS on the event loop
+ * instead: the same case resolved in 7 ms, and pending queries are cancelled
+ * once the time budget runs out.
+ *
+ * c-ares skips the hosts file. That is right for public RPC hostnames, and the
+ * one name that matters there, localhost, is refused explicitly below.
  */
 const DNS_TIMEOUT_MS = 3_000;
-const TIMEOUT_MARKER = 'dns-timeout';
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: NodeJS.Timeout;
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error(TIMEOUT_MARKER)), ms);
-    }),
-  ]).finally(() => clearTimeout(timer)) as Promise<T>;
+async function resolveHostname(hostname: string): Promise<{ addresses: string[]; timedOut: boolean }> {
+  const resolver = new Resolver({ timeout: 1_500, tries: 2 });
+  const timer = setTimeout(() => resolver.cancel(), DNS_TIMEOUT_MS);
+  try {
+    const answers = await Promise.allSettled([resolver.resolve4(hostname), resolver.resolve6(hostname)]);
+    const addresses = answers.flatMap((answer) => (answer.status === 'fulfilled' ? answer.value : []));
+    const timedOut = answers.some(
+      (answer) =>
+        answer.status === 'rejected' &&
+        ['ETIMEOUT', 'ECANCELLED'].includes((answer.reason as NodeJS.ErrnoException | undefined)?.code ?? ''),
+    );
+    return { addresses, timedOut };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export type HostCheck =
@@ -186,30 +202,29 @@ export async function resolvePublicAddresses(hostname: string): Promise<HostChec
     return reason ? { ok: false, kind: 'blocked', reason } : { ok: true, addresses: [literal] };
   }
 
-  let resolved: Array<{ address: string }>;
-  try {
-    resolved = await withTimeout(dnsLookup(hostname, { all: true }), DNS_TIMEOUT_MS);
-  } catch (error) {
+  // c-ares does not read the hosts file, so loopback names are refused by
+  // name. RFC 6761 reserves every *.localhost name for loopback too.
+  const name = literal.toLowerCase().replace(/\.$/, '');
+  if (name === 'localhost' || name.endsWith('.localhost')) {
+    return { ok: false, kind: 'blocked', reason: 'loopback' };
+  }
+
+  const { addresses, timedOut } = await resolveHostname(name);
+
+  if (addresses.length === 0) {
     return {
       ok: false,
       kind: 'unresolvable',
-      reason:
-        error instanceof Error && error.message === TIMEOUT_MARKER
-          ? `the hostname did not resolve within ${DNS_TIMEOUT_MS} ms`
-          : 'the hostname does not resolve',
+      reason: timedOut ? `the hostname did not resolve within ${DNS_TIMEOUT_MS} ms` : 'the hostname does not resolve',
     };
   }
 
-  if (resolved.length === 0) {
-    return { ok: false, kind: 'unresolvable', reason: 'the hostname resolves to no address' };
-  }
-
-  for (const { address } of resolved) {
+  for (const address of addresses) {
     const reason = blockedAddressReason(address);
     if (reason) return { ok: false, kind: 'blocked', reason };
   }
 
-  return { ok: true, addresses: resolved.map((entry) => entry.address) };
+  return { ok: true, addresses };
 }
 
 /**
