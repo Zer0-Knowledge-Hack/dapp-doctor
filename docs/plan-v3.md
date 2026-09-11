@@ -6,6 +6,22 @@ premises turned out wrong.
 
 Written 2026-09-10. Deadline **2026-09-14T02:59Z** (23:59 ART, Sunday 13).
 
+## Status on 11 September
+
+The day-by-day section below is the original plan; reality moved. Read this
+first.
+
+| Item | Status |
+|---|---|
+| Public deployment, project created on the platform | ✅ done Thursday |
+| RevenueCat: offering, `daap_doctor_pro` entitlement, server-side checks, history | ✅ live, moved ahead of Nebius |
+| MCP server for agents | ✅ built; added after the plan was written |
+| Config reader (paste a `.env` or config) | 🟡 built and tested, not yet in the web UI |
+| Landing page | 🟡 being built from `docs/landing-brief.md` |
+| **Nebius** | ⏸ **on hold**: the Token Factory credits could not be redeemed from our country. Worth asking the organizers at hey@nerdconf.com for another route |
+| RevenueCat end-to-end test with a real Test Store purchase | ⏳ pending, needs a browser |
+| Demo video, X post, Submit | ⏳ Sunday |
+
 ---
 
 ## What changed from v2

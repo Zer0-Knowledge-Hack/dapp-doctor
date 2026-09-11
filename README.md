@@ -3,24 +3,24 @@
 Read-only diagnosis of a dApp RPC configuration. Finds the failure, says what
 to do about it, and proves the fix worked.
 
-Built for the **Burning Token · NERDCONF** hackathon (September 2026).
+Built for the **Burning Token** hackathon by NERDCONF (September 2026).
+
+**Live:** https://dapp-doctor.vercel.app
 
 ---
 
 ## Status
 
-The deterministic engine is finished and verified against Base Mainnet and
-Base Sepolia live. The sponsor integrations are not in yet.
-
 | Component | Status |
 |---|---|
-| Six-check engine | ✅ working |
-| Aggregated status and report | ✅ working |
-| Before/after comparison | ✅ working |
-| Public deployment | ⛔ pending |
-| Demo contract on Base Sepolia | ⛔ pending |
-| Nebius — Applied AI | ⛔ pending |
-| Render — Workflows | ⛔ pending |
+| Six-check engine, verified against Base Mainnet and Base Sepolia | ✅ live |
+| Aggregated verdict and report | ✅ live |
+| Before/after comparison (`/compare`) | ✅ live |
+| Public deployment | ✅ live |
+| DApp Doctor Pro: diagnosis history, sold with RevenueCat | ✅ live (Test Store purchases) |
+| MCP server for agents (`/api/mcp`) | ✅ live |
+| Config reader (paste a `.env` or config) | 🟡 built and tested; not yet in the web UI |
+| Nebius — AI root-cause analysis | ⏸ on hold: client written, not wired in |
 
 This README is updated as each piece lands. It does not announce anything that
 does not work yet.
@@ -33,7 +33,7 @@ the wrong network, a lagging node, or an address where no contract exists. The
 symptom is not an exception, it is a zero where a balance should be.
 
 DApp Doctor runs six deterministic checks against that configuration and
-returns a status with a concrete action per finding.
+returns a verdict with a concrete action per finding.
 
 ## The six checks
 
@@ -50,9 +50,9 @@ All of them use only `eth_call`, `eth_getCode`, `eth_chainId`,
 `eth_blockNumber` and `eth_getBlockByNumber`. **No private keys, no seed
 phrases, no transactions.**
 
-## The statuses
+## The verdicts
 
-| Status | Meaning |
+| Verdict | Meaning |
 |---|---|
 | `READY` | All six passed. |
 | `AT_RISK` | Nothing critical fails, but there are warnings or untested checks. |
@@ -68,7 +68,7 @@ A single report proves nothing. `/compare` runs two diagnoses in parallel —
 the broken configuration and the fixed one — and shows the delta per check:
 
 ```
-BLOCKED  ->  READY     2 fixed · 0 regressed
+BLOCKED  ->  READY     2 fixed, 0 regressed
 
 RPC access             PASS        -> PASS        unchanged
 Network identity       FAIL        -> PASS        FIXED
@@ -82,6 +82,42 @@ Both run in parallel on purpose: run in series, if network state changed
 between one and the other, the "before/after" would be comparing two different
 moments. The verdict names the regression first when there is one — having
 fixed four things does not make up for breaking one that used to pass.
+
+## Use it from your agent (MCP)
+
+DApp Doctor is also an MCP server, so an agent can read your project and run
+the diagnosis without you filling in anything:
+
+```bash
+claude mcp add --transport http dapp-doctor https://dapp-doctor.vercel.app/api/mcp
+```
+
+Then ask your agent to check the project's RPC configuration with DApp Doctor,
+or use the `check_my_dapp` prompt.
+
+| Tool | What it does |
+|---|---|
+| `diagnose_rpc` | Runs the six checks on values the agent read from the project |
+| `diagnose_config` | Reads the values itself from configuration text: a URL, `.env` lines, a wagmi or hardhat config |
+| `compare_configs` | Diagnoses a configuration before and after a change, to prove the fix |
+
+Every tool is read-only and marked so. Text containing a private key, a seed
+phrase or a variable named like one is **refused before it is read**, and the
+refusal never repeats the value.
+
+## DApp Doctor Pro
+
+Diagnosis and comparison are free. Pro keeps every diagnosis you run, so you can
+see when a configuration broke and prove when it was fixed.
+
+- Sold through **RevenueCat** (web SDK). During the hackathon all purchases are
+  **Test Store** transactions: no card is charged.
+- Access is verified **on the server** against RevenueCat on every paid
+  request. A browser-only check could be skipped from the devtools.
+- If RevenueCat cannot be reached, access is refused with the reason rather
+  than granted on a guess.
+- A cancelled purchase, a failed one and an expired entitlement each have their
+  own message. The history is kept after access expires.
 
 ## Running it
 
@@ -97,18 +133,22 @@ pnpm dev             # http://localhost:3000
 Full verification:
 
 ```bash
-pnpm verify          # typecheck + build + smoke
+pnpm verify
 ```
 
-Or one at a time: `pnpm typecheck`, `pnpm build`, `pnpm smoke`.
+It runs, in order: `typecheck`, `build`, `ssrf` (the guard), `billing`
+(entitlement rules), `intake` (the config reader), `mcp` (the agent tools and
+secret refusal) and `smoke` (five scenarios against Base, live). The smoke test
+hits real public RPCs, so it can fail because a provider is down rather than
+because of the code.
 
-The smoke test hits real public RPCs, so it can fail because a provider is
-down rather than because of the code.
+Environment variables are listed, empty, in `.env.example`. Without them the
+diagnosis still works; Pro and history simply report that they are not enabled.
 
 ## API
 
 ```bash
-curl -X POST http://localhost:3000/api/diagnose \
+curl -X POST https://dapp-doctor.vercel.app/api/diagnose \
   -H "content-type: application/json" \
   -d '{
     "rpcUrl": "https://mainnet.base.org",
@@ -138,25 +178,42 @@ in `ssrfGuard.ts` and `rpc.ts`:
 3. **Redirects are never followed.** `rpc.ts` uses `node:http`, not `fetch`,
    partly for this: a redirect is the standard way around a host check.
 
-Third-party response content is bounded and validated before entering a report:
-responses are capped, echoed text is stripped of control characters and
-truncated, and `eth_blockNumber` output must be a hex quantity to be shown.
+The same engine serves the web app and the MCP server, so agents are held to
+exactly the same guard as browsers.
 
-`pnpm ssrf` asserts all of it, including that the metadata endpoint and
-loopback are refused end to end.
+Keeping secrets out of everything we store or return:
+
+- Third-party response content is bounded and validated before entering a
+  report: capped responses, control characters stripped, and `eth_blockNumber`
+  output must be a hex quantity to be shown.
+- RPC URLs are redacted in reports, agent output and stored history, since
+  providers put API keys in the path or query string.
+- The history user id travels in a request header, never a URL, because URLs
+  end up in logs, browser history and Referer headers.
+- Server-only keys never reach the browser bundle; only the RevenueCat public
+  key does, by design.
+
+`pnpm ssrf` and `pnpm mcp` assert all of this.
 
 ## Architecture
 
 ```
-src/lib/diagnostics/
-  types.ts        data model
-  rpc.ts          JSON-RPC client + API key redaction in URLs
-  networks.ts     known networks, so they can be named instead of numbered
-  engine.ts       orchestration, gating and status aggregation
-  compare.ts      delta between two diagnoses
-  parseTarget.ts  validation shared by both routes
-  ssrfGuard.ts    address validation and anti-rebinding connection pinning
-  checks/         one check per file
+src/
+  app/
+    page.tsx              the diagnosis tool
+    compare/              before/after
+    history/              DApp Doctor Pro
+    api/diagnose          one diagnosis
+    api/compare           two diagnoses and their delta
+    api/history           a paying user's saved diagnoses
+    api/mcp               the MCP server for agents
+  lib/
+    diagnostics/          the engine: checks, gating, verdicts, SSRF guard
+    intake/extract.ts     reads RPC URL, chain and contract from any config text
+    billing/              RevenueCat: browser purchase flow, server entitlements
+    history/store.ts      Upstash Redis storage, redacted before writing
+    mcp/                  agent tools, secret refusal, agent-facing output
+    ai/                   Nebius Token Factory client (on hold, not wired in)
 ```
 
 The engine deliberately avoids viem's transport: it needs to tell a network
@@ -164,30 +221,31 @@ failure apart from a provider 429 and from a JSON-RPC error, because each
 leads to a different action. viem is used to encode and decode the critical
 read.
 
-Corrective actions are a **deterministic table**, not a model call. The Nebius
-AI sits on top of this, not instead of it: if it goes down or hallucinates,
-the diagnosis keeps working.
+Corrective actions are a **deterministic table**, not a model call. When the
+Nebius integration is wired in, the AI explains the root cause on top of that
+table; it never decides whether a check passed.
 
-## Tracks
+## Challenges
 
-| Track | How it is covered | Status |
+| Challenge | How it is covered | Status |
 |---|---|---|
-| **Nebius — Applied AI** | Token Factory interprets raw provider errors and correlates the six findings into one root cause, in the main flow. Evaluated on cases with known causes. | ⛔ pending |
-| **Render — Workflows** | Multi-step pipeline with an injected failure, retry and recovery without duplicating findings. | ⛔ pending |
+| **Subscriptions — RevenueCat** | DApp Doctor Pro: offering with monthly, yearly and lifetime plans, the `daap_doctor_pro` entitlement gating diagnosis history, verified server-side. Handles successful, cancelled and failed purchases and expired access. | ✅ live, Test Store |
+| **Applied AI — Nebius** | Token Factory would explain the single root cause behind several failing checks, in the main flow. | ⏸ on hold: the credits could not be redeemed from our country |
 
-Deep Research · Linkup is not being entered: its entry requirement is iterative
-research that stores findings and uses them to choose the next search, which is
-beyond what this project needs.
+Deep Research (Linkup), Multiplayer (Convex) and Workflows (Render) are not
+being entered.
 
 ## AI and prior components disclosure
 
 - **AI used to build the project:** Claude Code (Claude Opus 5), for the
-  design and implementation of the diagnostic engine, the API and the UI.
+  design and implementation of the diagnostic engine, the API, the MCP server
+  and the UI.
 - **Components predating 5 September 2026:** none. The repository was started
   on 9 September 2026. The only earlier document is the work plan (`docs/`),
   written on 8 September.
-- **Third-party dependencies:** Next.js, React, viem and Tailwind, all public
-  and declared in `package.json`.
+- **Third-party dependencies:** Next.js, React, viem, Tailwind, the RevenueCat
+  web SDK, the Upstash Redis client, the MCP SDK and zod, all public and
+  declared in `package.json`.
 
 <!-- TODO team: confirm this section before submitting. -->
 

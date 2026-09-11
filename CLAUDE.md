@@ -55,6 +55,12 @@ comment in `engine.ts`.
 - Before sending anything to Linkup or Nebius, pass it through `redactRpcUrl`
   or an equivalent. RPC providers put the API key in the path or the query
   string, and the report is public.
+- **No key-shaped literals anywhere, tests included.** A test that needs a
+  private key or seed phrase builds one at runtime (`'a1b2c3d4'.repeat(8)`),
+  even a well-known public test key: secret scanners flag it, and a public repo
+  must not look like it leaks.
+- Anything that identifies a user to a paid endpoint travels in a header,
+  never a URL. URLs end up in logs, browser history and Referer headers.
 
 ## 3. The SSRF guard
 
@@ -67,8 +73,9 @@ caller. That is an SSRF primitive, and `ssrfGuard.ts` is what contains it.
   is a reason we use it instead of `fetch`.
 - Never echo a third-party response into a report unvalidated. Bound it and
   strip it, the way `sanitize` and `isHexQuantity` do.
-- If you add a network call anywhere, add its attack case to
-  `scripts/ssrf.mts`.
+- If you add a network call or a new way in (a route, an MCP tool), add its
+  attack case to `scripts/ssrf.mts` or to that entry point's own suite, as
+  `scripts/mcp.mts` does for agents.
 
 `pnpm ssrf` must stay green. If it fails, the deployment is exposing the
 internal network of whatever host it runs on.
@@ -98,31 +105,30 @@ default your agent has for adding attribution lines.
 ## 5. Before merging
 
 ```bash
-pnpm verify   # typecheck + build + ssrf + smoke, in that order
+pnpm verify   # typecheck, build, ssrf, billing, intake, mcp, smoke — in that order
 ```
 
-All four stages must pass. The smoke test hits real public RPCs, so it can fail
+All seven stages must pass. Run `pnpm lint` and `pnpm audit --prod` too before
+publishing anything. The smoke test hits real public RPCs, so it can fail
 because a provider is down rather than because of your code — if it fails,
 look at which scenario before assuming you broke something.
 
 ## 6. Track ownership
 
 Each sponsor track is **binary eligibility**: without the complete
-integration, the project is out of that track. That is why it is three
-complete tracks and not six half-done ones, and why nobody touches someone
-else's track.
+integration, the project is out of that track. Entering a challenge and failing
+it does not harm the others, so which tracks we enter is a time decision, and
+the goal is cash prizes.
 
-| Track | Module | Hard requirement (verbatim from the brief) |
-|---|---|---|
-| Nebius (Applied AI) | AI diagnosis + evaluation cases | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
-| Render (Workflows) | multi-step pipeline | Render Workflows executes it; recovery from a failed step; retries must not create duplicate records or actions |
+| Track | Status | Module | Hard requirement (verbatim from the brief) |
+|---|---|---|---|
+| RevenueCat (Subscriptions) | **Active — live** | `src/lib/billing/`, `/history` | Integrate a RevenueCat SDK; configure an offer and use entitlements to control access to a useful feature; show a successful purchase, a failed one and expired access |
+| Nebius (Applied AI) | **On hold** — credits could not be redeemed from our country | `src/lib/ai/` (not wired in) | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
 
-**Linkup is out of scope.** Its entry requirement is not a single search: the
-research flow has to *store findings and use them to decide what to investigate
-next*, and show follow-up searches. That is iterative research, not the one
-lookup the earlier plan budgeted for. Entering and failing a challenge does not
-harm the others, so this is purely a time decision — the hours go to Shipping,
-Nebius and Render instead.
+Not entered: **Linkup** (its requirement is iterative research that stores
+findings and uses them to choose the next search), **Convex** (the frontend
+would have to move to Convex static hosting), and **Render** (it awards credits,
+not cash).
 
 ### Where the Nebius line sits
 
@@ -137,9 +143,9 @@ be a switch we flip off. The split:
 - If Nebius is unavailable, the report degrades to the deterministic table and
   says so. It does not silently pretend the AI answered.
 
-The deterministic engine is closed. The three integrations are separable
-modules: if you are editing `src/lib/diagnostics/`, you have probably stepped
-into someone else's path.
+The deterministic engine is closed. Integrations are separable modules: if you
+are editing `src/lib/diagnostics/`, you have probably stepped into someone
+else's path.
 
 ## 7. What the submission actually requires
 
