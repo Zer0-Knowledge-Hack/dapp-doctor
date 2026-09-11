@@ -11,6 +11,32 @@ element with reference code, and the claims the page may and may not make.
 
 ---
 
+## Prompt to paste into Codex
+
+> Build the landing page for DApp Doctor by following this brief exactly.
+>
+> - Stack: Next.js 15 App Router, React 19, TypeScript (strict), Tailwind CSS
+>   v4. No other dependencies: no animation libraries, no UI kits, no icon
+>   packages. Motion is plain CSS.
+> - Output only the files listed in section 8, at exactly those paths. Deliver
+>   them as one folder that mirrors the repository layout, so it can be copied
+>   over the repo root.
+> - Use the three provided files in section 8 verbatim: `globals.css`,
+>   `layout.tsx` and `Ecg.tsx`.
+> - Put every piece of copy and every LIVE / NOT YET flag in
+>   `src/components/landing/content.ts`. Components read from it; no copy is
+>   hardcoded inside a component.
+> - Render only sections and items flagged LIVE.
+> - Copy is final. Follow section 4 for visuals and its "Do not" list strictly.
+> - All links are relative routes of the same app: `/diagnose`, `/compare`,
+>   `/history`, plus the GitHub repository.
+> - Server components by default. Add `'use client'` only if a component truly
+>   needs browser state; the landing should need none.
+> - It must pass `pnpm typecheck` and `pnpm build` in the repository. Use pnpm;
+>   never npm, yarn or npx.
+
+---
+
 ## 0. Rules for whoever builds this
 
 1. **Copy is final.** Use it as written. If something does not fit the layout,
@@ -21,12 +47,10 @@ element with reference code, and the claims the page may and may not make.
    on what actually works, and the rules forbid presenting simulated results as
    real. A landing page that promises a feature the app does not have is the
    fastest way to lose the jury's trust.
-3. **Stack.** Decide before writing code where the landing lives:
-   - **Inside the Next.js app** (`src/app/page.tsx` in this repo): one URL, one
-     deploy, shared design tokens. Recommended.
-   - **As a separate site** (for example Astro): its own deploy, and every call
-     to action points at `https://dapp-doctor.vercel.app`. The hackathon form
-     takes one public project URL, so decide which one it is.
+3. **Stack — decided.** The landing lives inside the existing Next.js app, at
+   `/`. One URL, one deploy, one set of design tokens. The diagnosis tool moves
+   from `/` to `/diagnose`; that move is done during integration, not by
+   whoever builds the landing. Section 8 has the exact file structure.
 4. **Project rules apply** (see `CLAUDE.md`): English only, pnpm only — never
    npm, yarn or npx — and no AI attribution in commits.
 
@@ -86,10 +110,10 @@ to translate.
 > finds out why: the wrong network, a lagging node, or a contract that isn't
 > there. Get a verdict in seconds.
 
-- **Primary action:** `Diagnose my dApp` → `https://dapp-doctor.vercel.app`
-- **Secondary action:** `Watch it catch a broken one` → the app with the broken
-  demo already running (`https://dapp-doctor.vercel.app/?demo=broken` — the app
-  does not accept this parameter yet; until it does, link to the app root)
+- **Primary action:** `Diagnose my dApp` → `/diagnose`
+- **Secondary action:** `Watch it catch a broken one` → `/diagnose?demo=broken`,
+  which opens the tool with the broken demo already running. This parameter is
+  added during integration.
 - **Visual:** the ECG strip (section 5), full width under the headline, beating
   steadily. This is the one bold element of the page.
 
@@ -158,7 +182,7 @@ Then two lines, set apart:
 
 `BLOCKED` stamp → `READY` stamp.
 
-**Action:** `Compare two setups` → `https://dapp-doctor.vercel.app/compare`
+**Action:** `Compare two setups` → `/compare`
 
 ### Ways in
 
@@ -201,7 +225,7 @@ Required line, in plain view near the plans:
 > During the hackathon, purchases are RevenueCat Test Store transactions. No
 > card is charged.
 
-**Action:** `See Pro plans` → `https://dapp-doctor.vercel.app/history`
+**Action:** `See Pro plans` → `/history`
 
 ### Trust — LIVE
 
@@ -222,13 +246,13 @@ Required line, in plain view near the plans:
 
 > **Your dApp has been lying long enough.**
 
-**Action:** `Diagnose my dApp` → the app.
+**Action:** `Diagnose my dApp` → `/diagnose`
 
 ### Footer — LIVE
 
 > Built for the Burning Token hackathon by NERDCONF, September 2026.
 
-Links: the app, the repository.
+Links: `Diagnose` → `/diagnose`, `Source code` → https://github.com/Zer0-Knowledge-Hack/dapp-doctor
 
 ---
 
@@ -447,3 +471,408 @@ Accessible labels per rhythm:
 - [ ] None of the "Do not" items appear anywhere.
 - [ ] The Test Store line is visible next to the plans.
 - [ ] Largest contentful paint under 2.5 s on a mid-range phone.
+
+---
+
+## 8. Deliverable — stack and file structure
+
+The landing is added to the existing repository. This is the complete list of
+files to produce. Anything not listed must not be created or changed.
+
+```
+src/
+├── app/
+│   ├── layout.tsx              REPLACE — provided below, use verbatim
+│   ├── globals.css             REPLACE — provided below, use verbatim
+│   └── page.tsx                NEW — the landing: composes the sections in order
+└── components/
+    ├── ecg/
+    │   └── Ecg.tsx             NEW — provided below, use verbatim
+    ├── ui/
+    │   ├── Stamp.tsx           NEW — the verdict stamp
+    │   ├── ButtonLink.tsx      NEW — links styled as .btn-pen or .btn-plain
+    │   └── Sheet.tsx           NEW — the .sheet surface
+    └── landing/
+        ├── content.ts          NEW — all copy and LIVE / NOT YET flags
+        ├── SiteHeader.tsx      NEW — wordmark and navigation
+        ├── Hero.tsx            NEW — beat 1, with the ECG strip
+        ├── Symptoms.tsx        NEW — beat 2
+        ├── SixChecks.tsx       NEW — beat 3
+        ├── Verdicts.tsx        NEW — beat 4
+        ├── BeforeAfter.tsx     NEW — beat 5
+        ├── WaysIn.tsx          NEW — renders only LIVE items
+        ├── Pro.tsx             NEW — beat 6
+        ├── Trust.tsx           NEW — beat 7
+        ├── FinalCall.tsx       NEW — the final call to action
+        └── SiteFooter.tsx      NEW
+```
+
+### Do not touch
+
+`src/lib/**`, `src/app/api/**`, `src/app/compare/**`, `src/app/history/**`,
+`scripts/**`, `package.json`, `pnpm-lock.yaml`, and any configuration file.
+The current `src/app/page.tsx` is the diagnosis tool: it is moved to
+`src/app/diagnose/page.tsx` during integration, so the new `page.tsx` simply
+replaces it.
+
+### Repository facts the code must respect
+
+- Path alias: `@/*` resolves to `src/*`.
+- Tailwind v4: tokens are declared in `globals.css` under `@theme inline`, so
+  utilities such as `bg-paper`, `text-pen`, `border-ink`, `text-triage-red`,
+  `font-display`, `font-stamp` and `font-mono` exist.
+- The status type lives in `@/lib/diagnostics/types` as
+  `type OverallStatus = 'READY' | 'AT_RISK' | 'BLOCKED' | 'NOT_TESTED'`.
+  Import it rather than redeclaring it.
+- The provided `Ecg.tsx` imports that same type; keep the import as is.
+
+### Component contracts
+
+```ts
+// src/components/ui/Stamp.tsx
+// Stencil type, triage colour, rotated like ink on paper (.stamp in globals.css).
+// READY -> triage-green, AT_RISK -> triage-amber, BLOCKED -> triage-red,
+// NOT_TESTED -> muted. Label text: "READY", "AT RISK", "BLOCKED", "NOT TESTED".
+export function Stamp(props: { status: OverallStatus; size?: 'md' | 'lg' }): React.ReactElement;
+
+// src/components/ui/ButtonLink.tsx
+// Wraps next/link. Variant 'pen' is the single main action of a section.
+export function ButtonLink(props: {
+  href: string;
+  variant: 'pen' | 'plain';
+  children: React.ReactNode;
+}): React.ReactElement;
+
+// src/components/ui/Sheet.tsx
+// The .sheet surface. Used only by Hero and BeforeAfter.
+export function Sheet(props: { children: React.ReactNode; className?: string }): React.ReactElement;
+```
+
+### Shape of `content.ts`
+
+```ts
+export type Availability = 'LIVE' | 'NOT_YET';
+
+export const landing = {
+  hero: {
+    headline: "Your dApp isn't broken. It's lying.",
+    body: '...',                     // from section 3, verbatim
+    primary: { label: 'Diagnose my dApp', href: '/diagnose' },
+    secondary: { label: 'Watch it catch a broken one', href: '/diagnose?demo=broken' },
+  },
+  waysIn: [
+    { title: 'Fill in the details', body: '...', availability: 'LIVE' },
+    { title: 'Paste it', body: '...', availability: 'NOT_YET' },
+    { title: 'Ask your agent', body: '...', availability: 'NOT_YET' },
+    { title: 'Point it at a repo', body: '...', availability: 'NOT_YET' },
+  ],
+  // ...one key per section, same pattern.
+} as const;
+```
+
+Flipping an item from `NOT_YET` to `LIVE` in this one file must be the only
+change needed when a feature ships.
+
+### Provided file — `src/app/globals.css`
+
+```css
+@import "tailwindcss";
+
+/*
+ * DApp Doctor — clinic punk.
+ *
+ * Colour carries meaning and nothing else:
+ *   paper + grid   ECG chart paper, the ground everything sits on
+ *   ink            pure black, for borders and type
+ *   pen            ballpoint blue, only where the user acts or is told to act
+ *   triage         red / amber / green, only for a check or diagnosis status
+ */
+:root {
+  --paper: #fff1ee;
+  --grid-fine: rgba(226, 88, 72, 0.13);
+  --grid-major: rgba(226, 88, 72, 0.3);
+  --ink: #000000;
+  --muted: #5b5451;
+  --sheet: #ffffff;
+  --pen: #1b3bd1;
+  --triage-red: #e8231e;
+  --triage-amber: #f5a400;
+  --triage-green: #0fa85a;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-sheet: var(--sheet);
+  --color-pen: var(--pen);
+  --color-triage-red: var(--triage-red);
+  --color-triage-amber: var(--triage-amber);
+  --color-triage-green: var(--triage-green);
+  --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
+  --font-stamp: var(--font-big-shoulders-stencil), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+body {
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* ECG paper: a 1 mm grid inside a heavier 5 mm grid. */
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-fine) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--pen);
+  outline-offset: 3px;
+}
+
+@layer components {
+  /* A sheet of chart paper pinned to the board: the two primary surfaces only. */
+  .sheet {
+    background: var(--sheet);
+    border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  /* The main action. Pressing it visibly pushes it into the page. */
+  .btn-pen {
+    background: var(--pen);
+    color: #fff;
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    font-weight: 700;
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .btn-pen:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  .btn-pen:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  .btn-plain {
+    background: var(--sheet);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    font-weight: 600;
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .btn-plain:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+  .btn-plain[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .field {
+    background: var(--sheet);
+    border: 2px solid var(--ink);
+    font-family: var(--font-mono);
+  }
+  .field:focus {
+    outline: 3px solid var(--pen);
+    outline-offset: 0;
+  }
+}
+
+/* The trace draws once when a new rhythm arrives. */
+@keyframes ecg-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.ecg-trace {
+  stroke-dasharray: 1;
+  animation: ecg-draw 1.4s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+
+/* A rubber stamp lands: brief overshoot, then settles at an angle. */
+@keyframes stamp-land {
+  from { transform: rotate(-7deg) scale(1.35); opacity: 0; }
+  to { transform: rotate(-7deg) scale(1); opacity: 1; }
+}
+.stamp {
+  transform: rotate(-7deg);
+  animation: stamp-land 180ms ease-out both;
+  mix-blend-mode: multiply;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecg-trace,
+  .stamp {
+    animation: none;
+  }
+  .btn-pen,
+  .btn-plain {
+    transition: none;
+  }
+}
+```
+
+### Provided file — `src/app/layout.tsx`
+
+```tsx
+import type { Metadata } from 'next';
+import { Big_Shoulders, Big_Shoulders_Stencil, Public_Sans } from 'next/font/google';
+import './globals.css';
+
+// Condensed and heavy for headlines: the voice of a chart header.
+const bigShoulders = Big_Shoulders({
+  variable: '--font-big-shoulders',
+  subsets: ['latin'],
+  weight: ['700', '900'],
+});
+
+// Stencil cut of the same family, used only for the diagnosis stamp.
+const bigShouldersStencil = Big_Shoulders_Stencil({
+  variable: '--font-big-shoulders-stencil',
+  subsets: ['latin'],
+  weight: ['900'],
+});
+
+// Designed for government forms, which is what a clinical report is.
+const publicSans = Public_Sans({
+  variable: '--font-public-sans',
+  subsets: ['latin'],
+});
+
+export const metadata: Metadata = {
+  title: 'DApp Doctor',
+  description: 'Finds why your dApp is reading the wrong blockchain data, and proves the fix worked.',
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="en">
+      <body
+        className={`${bigShoulders.variable} ${bigShouldersStencil.variable} ${publicSans.variable} antialiased`}
+      >
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### Provided file — `src/components/ecg/Ecg.tsx`
+
+```tsx
+import type { OverallStatus } from '@/lib/diagnostics/types';
+
+/**
+ * An ECG strip whose rhythm is the diagnosis.
+ *
+ * READY beats evenly, AT_RISK is arrhythmic, BLOCKED weakens and goes flat.
+ * It is the one bold element of the page: the status is readable before a
+ * single word is. The shape carries the meaning, so it also works for anyone
+ * who cannot tell the triage colours apart.
+ */
+
+export type Rhythm = OverallStatus | 'idle';
+
+const WIDTH = 720;
+const HEIGHT = 120;
+const BASELINE = 72;
+
+/** One PQRST complex, as (dx, dy) from the baseline. Negative dy goes up. */
+const BEAT: Array<[number, number]> = [
+  [0, 0], [10, 0], [15, -8], [20, 0], [26, 0], [29, 6], [34, -56],
+  [39, 14], [43, 0], [52, 0], [60, -14], [68, 0], [80, 0],
+];
+
+interface BeatSpec {
+  /** Horizontal gap before this beat. */
+  gap: number;
+  /** Amplitude multiplier. */
+  amp: number;
+}
+
+const RHYTHMS: Record<Rhythm, BeatSpec[]> = {
+  idle: Array.from({ length: 6 }, () => ({ gap: 40, amp: 0.35 })),
+  READY: Array.from({ length: 6 }, () => ({ gap: 40, amp: 1 })),
+  AT_RISK: [
+    { gap: 30, amp: 1 },
+    { gap: 110, amp: 0.55 },
+    { gap: 20, amp: 1.1 },
+    { gap: 90, amp: 0.4 },
+    { gap: 35, amp: 0.9 },
+  ],
+  BLOCKED: [
+    { gap: 40, amp: 1 },
+    { gap: 60, amp: 0.45 },
+    { gap: 90, amp: 0.15 },
+  ],
+  NOT_TESTED: [
+    { gap: 60, amp: 0.2 },
+    { gap: 160, amp: 0.2 },
+  ],
+};
+
+function pathFor(rhythm: Rhythm): string {
+  const points: string[] = [`M0,${BASELINE}`];
+  let x = 0;
+  for (const { gap, amp } of RHYTHMS[rhythm]) {
+    x += gap;
+    points.push(`L${x},${BASELINE}`);
+    for (const [dx, dy] of BEAT) points.push(`L${x + dx},${BASELINE + dy * amp}`);
+    x += BEAT[BEAT.length - 1][0];
+  }
+  // Whatever is left of the strip is flat: for BLOCKED, that flat line is the point.
+  points.push(`L${WIDTH},${BASELINE}`);
+  return points.join(' ');
+}
+
+const LABEL: Record<Rhythm, string> = {
+  idle: 'Waiting for a diagnosis',
+  READY: 'Steady rhythm: all checks passed',
+  AT_RISK: 'Irregular rhythm: some checks need attention',
+  BLOCKED: 'Flatline: a critical check failed',
+  NOT_TESTED: 'No signal: nothing could be checked',
+};
+
+export function Ecg({ rhythm, className = '' }: { rhythm: Rhythm; className?: string }) {
+  return (
+    <svg
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label={LABEL[rhythm]}
+      className={className}
+    >
+      {/* Keyed by rhythm so a new result redraws the strip instead of snapping. */}
+      <path
+        key={rhythm}
+        d={pathFor(rhythm)}
+        pathLength={1}
+        className="ecg-trace"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={3}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+```
+
+---
+
+## 9. Handing it back
+
+Deliver one folder containing only the files from section 8, at their paths
+from the repository root. It is integrated on its own branch, verified with
+`pnpm verify`, and reviewed against section 7 before anything reaches
+production.
