@@ -25,6 +25,7 @@ export const landing = {
       { label: 'Diagnose', href: '/diagnose', availability: 'LIVE' },
       { label: 'Compare', href: '/compare', availability: 'LIVE' },
       { label: 'Pro', href: '/history', availability: 'LIVE' },
+      { label: 'Heartbeat', href: '/heartbeat', availability: 'LIVE' },
       { label: 'Source code', href: repository, availability: 'LIVE' },
     ],
   },
@@ -104,6 +105,7 @@ export const landing = {
     body: 'Every diagnosis is saved, so you can see when a configuration broke and prove when it was fixed.',
     features: [
       { text: 'Saved diagnosis history.', availability: 'LIVE' },
+      { text: 'Launch Check: a stricter bar before you go to mainnet.', availability: 'LIVE' },
       { text: 'Saved setups you re-check in one click, with a timeline of when each one broke and when it recovered.', availability: 'NOT_YET' },
     ],
     // Snapshot of the brief. Confirm against RevenueCat before integration.
@@ -136,6 +138,7 @@ export const landing = {
     navigationLabel: 'Footer navigation',
     links: [
       { label: 'Diagnose', href: '/diagnose', availability: 'LIVE' },
+      { label: 'Listen to a chain', href: '/heartbeat', availability: 'LIVE' },
       { label: 'Source code', href: repository, availability: 'LIVE' },
     ],
   },

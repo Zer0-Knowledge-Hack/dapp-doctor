@@ -76,6 +76,10 @@ caller. That is an SSRF primitive, and `ssrfGuard.ts` is what contains it.
 - If you add a network call or a new way in (a route, an MCP tool), add its
   attack case to `scripts/ssrf.mts` or to that entry point's own suite, as
   `scripts/mcp.mts` does for agents.
+- RPC Heartbeat is the one exception, and it is exempt by design: it reads
+  from the viewer's browser, never our servers, so a URL someone pastes can only
+  reach what their own browser already can. Keep it browser-side; routing it
+  through an API would bring it under every rule above.
 
 `pnpm ssrf` must stay green. If it fails, the deployment is exposing the
 internal network of whatever host it runs on.
@@ -105,10 +109,10 @@ default your agent has for adding attribution lines.
 ## 5. Before merging
 
 ```bash
-pnpm verify   # typecheck, build, ssrf, billing, intake, mcp, smoke — in that order
+pnpm verify   # typecheck, build, ssrf, billing, intake, mcp, launch, heartbeat, smoke — in that order
 ```
 
-All seven stages must pass. Run `pnpm lint` and `pnpm audit --prod` too before
+All nine stages must pass. Run `pnpm lint` and `pnpm audit --prod` too before
 publishing anything. The smoke test hits real public RPCs, so it can fail
 because a provider is down rather than because of your code — if it fails,
 look at which scenario before assuming you broke something.
@@ -122,8 +126,9 @@ the goal is cash prizes.
 
 | Track | Status | Module | Hard requirement (verbatim from the brief) |
 |---|---|---|---|
-| RevenueCat (Subscriptions) | **Active — live** | `src/lib/billing/`, `/history` | Integrate a RevenueCat SDK; configure an offer and use entitlements to control access to a useful feature; show a successful purchase, a failed one and expired access |
-| Nebius (Applied AI) | **On hold** — credits could not be redeemed from our country | `src/lib/ai/` (not wired in) | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
+| RevenueCat (Subscriptions) | **Active — live** | `src/lib/billing/`, `src/lib/launch/`, `/history`, `/launch` | Integrate a RevenueCat SDK; configure an offer and use entitlements to control access to a useful feature; show a successful purchase, a failed one and expired access |
+| Fun Build (NERDCONF) | **Active — live** | `src/lib/heartbeat/`, `src/components/heartbeat/`, `/heartbeat` | Something funny, strange or unexpected that someone outside the team can try; no sponsor technology required. Judged on Shipping, Originality, Fun and Execution |
+| Nebius (Applied AI) | **Not entered** — credits could not be redeemed from our country | `src/lib/ai/` (not wired in) | Token Factory used for inference **in the main product flow**; measure accuracy, time, or cost; **show a case the product struggles with** |
 
 Not entered: **Linkup** (its requirement is iterative research that stores
 findings and uses them to choose the next search), **Convex** (the frontend
@@ -131,6 +136,9 @@ would have to move to Convex static hosting), and **Render** (it awards credits,
 not cash).
 
 ### Where the Nebius line sits
+
+Nebius is not entered. This section stays because the line it draws applies to
+any AI feature added later.
 
 The track requires Token Factory to be *essential to the task*, so the AI cannot
 be a switch we flip off. The split:

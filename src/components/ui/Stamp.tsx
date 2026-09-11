@@ -8,9 +8,11 @@ const colors: Record<OverallStatus, string> = {
   NOT_TESTED: 'text-muted',
 };
 
-export function Stamp({ status, size = 'md' }: {
+export function Stamp({ status, size = 'md', label }: {
   status: OverallStatus;
   size?: 'md' | 'lg';
+  /** Different wording for the same triage colour, e.g. the heartbeat monitor's FLATLINE. */
+  label?: string;
 }): React.ReactElement {
   return (
     <span
@@ -18,7 +20,7 @@ export function Stamp({ status, size = 'md' }: {
       style={{ animationTimeline: 'view()', animationRange: 'entry 0% entry 80%' }}
     >
       {/* Black lettering keeps every verdict legible on paper, including amber. */}
-      <span className="text-ink">{statusLabels[status]}</span>
+      <span className="text-ink">{label ?? statusLabels[status]}</span>
     </span>
   );
 }
