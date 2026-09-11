@@ -10,6 +10,12 @@ export function WaysIn() {
           <li key={item.title} className="border-b border-ink py-6">
             <h3 className="mb-2 text-lg font-bold">{item.title}</h3>
             <p className="max-w-[65ch] text-muted">{item.body}</p>
+            {'command' in item && (
+              // A setup command is a machine value: mono, selectable, never wrapped mid-token on wide screens.
+              <code className="mt-3 block w-fit max-w-full overflow-x-auto border border-ink bg-sheet px-3 py-2 font-mono text-sm whitespace-nowrap">
+                {item.command}
+              </code>
+            )}
           </li>
         ))}
       </ul>

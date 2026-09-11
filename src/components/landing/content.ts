@@ -88,7 +88,13 @@ export const landing = {
     items: [
       { title: 'Fill in the details', body: 'Enter the RPC URL, the network your app expects, and optionally a contract and a fallback.', availability: 'LIVE' },
       { title: 'Paste it', body: 'An RPC URL, a .env file, or your wagmi or hardhat config. It is read in your browser; only the values the checks need are sent.', availability: 'NOT_YET' },
-      { title: 'Ask your agent', body: 'Connect DApp Doctor to Claude Code or Cursor as an MCP server. Your agent reads the project and runs the diagnosis.', availability: 'NOT_YET' },
+      {
+        title: 'Ask your agent',
+        body: 'Connect DApp Doctor to Claude Code or Cursor as an MCP server. Your agent reads the project and runs the diagnosis.',
+        // Live in production since 11 September 2026: tools verified over the protocol.
+        command: 'claude mcp add --transport http dapp-doctor https://dapp-doctor.vercel.app/api/mcp',
+        availability: 'LIVE',
+      },
       { title: 'Point it at a repo', body: 'Paste a public GitHub repository and DApp Doctor reads its configuration.', availability: 'NOT_YET' },
     ],
   },
