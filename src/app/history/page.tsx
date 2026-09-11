@@ -15,6 +15,7 @@ import {
   type PaywallOutcome,
   type ProStatus,
 } from '@/lib/billing/client';
+import { USER_ID_HEADER } from '@/lib/billing/constants';
 
 type AccessState =
   | { kind: 'loading' }
@@ -68,8 +69,10 @@ export default function History() {
   const loadHistory = useCallback(async (): Promise<AccessState> => {
     if (!isBillingEnabled()) return { kind: 'disabled' };
     try {
-      const response = await fetch(`/api/history?userId=${encodeURIComponent(getOrCreateUserId())}`, {
+      // In a header, not the URL: the id reads this history, and URLs are logged.
+      const response = await fetch('/api/history', {
         cache: 'no-store',
+        headers: { [USER_ID_HEADER]: getOrCreateUserId() },
       });
       const payload = await response.json();
       if (response.ok) {

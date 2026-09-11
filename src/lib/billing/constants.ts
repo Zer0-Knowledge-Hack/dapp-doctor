@@ -8,3 +8,9 @@
  */
 export const PRO_ENTITLEMENT_ID =
   process.env.NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID || 'daap_doctor_pro';
+
+/**
+ * Header that carries the app user id to paid endpoints. The id works as a
+ * credential for a user's history, so it must never travel in a URL.
+ */
+export const USER_ID_HEADER = 'x-dapp-doctor-user';

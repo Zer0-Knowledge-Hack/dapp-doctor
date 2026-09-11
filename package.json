@@ -9,18 +9,22 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "smoke": "tsx scripts/smoke.mts",
-    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm billing && pnpm intake && pnpm smoke",
+    "verify": "pnpm typecheck && pnpm build && pnpm ssrf && pnpm billing && pnpm intake && pnpm mcp && pnpm smoke",
     "ssrf": "tsx scripts/ssrf.mts",
     "billing": "tsx scripts/billing.mts",
-    "intake": "tsx scripts/intake.mts"
+    "intake": "tsx scripts/intake.mts",
+    "mcp": "tsx scripts/mcp.mts"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
     "@revenuecat/purchases-js": "^1.59.0",
     "@upstash/redis": "^1.38.4",
+    "mcp-handler": "^2.1.1",
     "next": "15.5.25",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "viem": "^2.56.3"
+    "viem": "^2.56.3",
+    "zod": "^4.6.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
