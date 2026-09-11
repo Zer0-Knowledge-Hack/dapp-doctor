@@ -4,3 +4,10 @@
 allowBuilds:
   esbuild: true
   unrs-resolver: true
+
+# Next.js pins an older postcss with published advisories (arbitrary .map file
+# reads via sourceMappingURL, XSS in stringify). None is reachable here, since
+# only our own CSS is processed and only at build time, but patched versions
+# are drop-in within postcss 8, so there is no reason to carry the alerts.
+overrides:
+  postcss: ^8.5.28
