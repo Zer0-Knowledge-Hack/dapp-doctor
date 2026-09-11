@@ -192,8 +192,10 @@ Then two lines, set apart:
   expects, and optionally a contract and a fallback.
 - **Paste it — NOT YET.** An RPC URL, a `.env` file, or your wagmi or hardhat
   config. It is read in your browser; only the values the checks need are sent.
-- **Ask your agent — NOT YET.** Connect DApp Doctor to Claude Code or Cursor as
-  an MCP server. Your agent reads the project and runs the diagnosis.
+- **Ask your agent — LIVE.** Connect DApp Doctor to Claude Code or Cursor as
+  an MCP server. Your agent reads the project and runs the diagnosis. Show the
+  one-line setup, copyable:
+  `claude mcp add --transport http dapp-doctor https://dapp-doctor.vercel.app/api/mcp`
 - **Point it at a repo — NOT YET.** Paste a public GitHub repository and DApp
   Doctor reads its configuration.
 
@@ -449,13 +451,15 @@ Accessible labels per rhythm:
 - Read-only: no keys, no signing, no transactions.
 - Refusal of private and internal network addresses.
 - Pro diagnosis history, sold through RevenueCat with Test Store purchases.
+- An MCP server any agent can connect to, whose tools are read-only and which
+  refuses configuration text containing a private key or seed phrase.
 - Open-source code.
 
 **Must not claim:**
 
 - AI diagnosis or AI root-cause analysis. It is written but not live.
 - Monitoring, alerts or scheduled checks. Not built.
-- The paste box, the MCP server or the GitHub reader — until each ships.
+- The paste box or the GitHub reader — until each ships.
 - User counts, testimonials, logos of companies using it, or uptime figures.
   None exist, and inventing them breaks the hackathon's rules.
 
@@ -563,7 +567,7 @@ export const landing = {
   waysIn: [
     { title: 'Fill in the details', body: '...', availability: 'LIVE' },
     { title: 'Paste it', body: '...', availability: 'NOT_YET' },
-    { title: 'Ask your agent', body: '...', availability: 'NOT_YET' },
+    { title: 'Ask your agent', body: '...', availability: 'LIVE' },
     { title: 'Point it at a repo', body: '...', availability: 'NOT_YET' },
   ],
   // ...one key per section, same pattern.
