@@ -71,7 +71,47 @@ const LABEL: Record<Rhythm, string> = {
   NOT_TESTED: 'No signal: nothing could be checked',
 };
 
-export function Ecg({ rhythm, className = '' }: { rhythm: Rhythm; className?: string }) {
+export function Ecg({ rhythm, className = '', motion }: {
+  rhythm: Rhythm;
+  className?: string;
+  motion?: { pauseLabel: string };
+}) {
+  // A repeated READY strip joins at its baseline with exactly six equal beats.
+  // Failed or untested states must never acquire a healthy looping heartbeat.
+  if (motion && rhythm === 'READY') {
+    return (
+      <div className={`ecg-monitor relative ${className}`}>
+        <svg
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={LABEL[rhythm]}
+          className="h-full w-full overflow-hidden"
+        >
+          <g className="ecg-track">
+            {[0, WIDTH].map((offset) => (
+              <path
+                key={offset}
+                d={pathFor(rhythm)}
+                transform={`translate(${offset} 0)`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </g>
+        </svg>
+        <label className="ecg-motion-control absolute right-0 bottom-0 flex min-h-6 cursor-pointer items-center gap-1.5 bg-sheet pl-2 font-sans text-[11px] leading-4 text-muted">
+          <input type="checkbox" className="h-3.5 w-3.5 accent-ink" />
+          {motion.pauseLabel}
+        </label>
+      </div>
+    );
+  }
+
   return (
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}

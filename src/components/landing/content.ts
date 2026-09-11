@@ -15,6 +15,7 @@ export const statusLabels: Record<OverallStatus, string> = {
 };
 
 export const landing = {
+  motion: { pauseLabel: 'Pause heartbeat' },
   header: {
     availability: 'LIVE',
     name: 'DApp Doctor',

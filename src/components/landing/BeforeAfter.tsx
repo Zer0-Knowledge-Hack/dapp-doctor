@@ -22,7 +22,7 @@ export function BeforeAfter() {
             <div className="min-w-0 pl-4 sm:pl-8">
               <p className="mb-5 text-sm font-semibold">{content.columns.after}</p>
               <Stamp status="READY" />
-              <Ecg rhythm="READY" className="mt-5 h-20 w-full text-ink sm:h-24" />
+              <Ecg rhythm="READY" motion={landing.motion} className="mt-5 h-20 w-full text-ink sm:h-24" />
             </div>
           </div>
           <table className="mt-5 w-full table-fixed border-collapse text-left text-xs leading-snug sm:text-base">
