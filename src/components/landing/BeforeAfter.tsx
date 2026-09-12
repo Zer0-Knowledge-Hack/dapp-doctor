@@ -1,10 +1,17 @@
+'use client';
+
 import { Ecg } from '@/components/ecg/Ecg';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Sheet } from '@/components/ui/Sheet';
 import { Stamp } from '@/components/ui/Stamp';
-import { isLive, landing } from './content';
+import { isLive } from './content';
+import { useLang } from '@/components/i18n/LanguageProvider';
+import { OUTCOME_LABELS } from '@/lib/i18n/engineText';
+import { useLanding } from './useLanding';
 
 export function BeforeAfter() {
+  const landing = useLanding();
+  const outcomes = OUTCOME_LABELS[useLang()];
   const content = landing.beforeAfter;
   return (
     <section aria-labelledby="comparison-heading">
@@ -38,8 +45,8 @@ export function BeforeAfter() {
               {content.rows.filter(isLive).map((row) => (
                 <tr key={row.check} className="border-b border-ink">
                   <th scope="row" className="py-4 pr-2 font-medium">{row.check}</th>
-                  <td className="py-4 pr-1"><span className={`inline-block border-l-[3px] pl-1.5 font-semibold ${row.before === 'FAIL' ? 'border-triage-red' : 'border-muted'}`}>{row.before}</span></td>
-                  <td className="py-4 pr-1"><span className="inline-block border-l-[3px] border-triage-green pl-1.5 font-semibold">{row.after}</span></td>
+                  <td className="py-4 pr-1"><span className={`inline-block border-l-[3px] pl-1.5 font-semibold ${row.before === 'FAIL' ? 'border-triage-red' : 'border-muted'}`}>{outcomes[row.before]}</span></td>
+                  <td className="py-4 pr-1"><span className="inline-block border-l-[3px] border-triage-green pl-1.5 font-semibold">{outcomes[row.after]}</span></td>
                   <td className="py-4 text-right">{row.change}</td>
                 </tr>
               ))}

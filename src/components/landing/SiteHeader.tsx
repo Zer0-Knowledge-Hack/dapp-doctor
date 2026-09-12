@@ -1,7 +1,12 @@
+'use client';
+
 import Link from 'next/link';
-import { isLive, landing } from './content';
+import { isLive } from './content';
+import { LanguageToggle } from '@/components/i18n/LanguageToggle';
+import { useLanding } from './useLanding';
 
 export function SiteHeader() {
+  const landing = useLanding();
   const content = landing.header;
   return (
     <header className="mx-auto flex w-full max-w-[1160px] flex-wrap items-center justify-between gap-x-8 gap-y-3 px-5 pt-7 pb-8 sm:px-8 sm:pt-9 sm:pb-10">
@@ -14,13 +19,16 @@ export function SiteHeader() {
         </svg>
         {content.name}
       </span>
-      <nav aria-label={content.navigationLabel} className="flex flex-wrap gap-x-5 sm:gap-x-7">
-        {content.links.filter(isLive).map((link) => (
-          <Link key={link.href} href={link.href} prefetch={false} className="flex min-h-11 items-center text-sm font-semibold underline decoration-1 underline-offset-4">
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:gap-x-8">
+        <nav aria-label={content.navigationLabel} className="flex flex-wrap gap-x-5 sm:gap-x-7">
+          {content.links.filter(isLive).map((link) => (
+            <Link key={link.href} href={link.href} prefetch={false} className="flex min-h-11 items-center text-sm font-semibold underline decoration-1 underline-offset-4">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <LanguageToggle />
+      </div>
     </header>
   );
 }

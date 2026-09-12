@@ -1,8 +1,11 @@
+'use client';
+
 import { Fragment } from 'react';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { landing } from './content';
+import { useLanding } from './useLanding';
 
 export function Trust() {
+  const landing = useLanding();
   const content = landing.trust;
   return (
     <section aria-labelledby="trust-heading" className="grid gap-7 border-t-2 border-ink pt-9 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">

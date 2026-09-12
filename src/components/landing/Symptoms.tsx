@@ -1,6 +1,10 @@
-import { isLive, landing } from './content';
+'use client';
+
+import { isLive } from './content';
+import { useLanding } from './useLanding';
 
 export function Symptoms() {
+  const landing = useLanding();
   const content = landing.symptoms;
   return (
     <section aria-labelledby="symptoms-heading" className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
