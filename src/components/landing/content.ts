@@ -23,9 +23,11 @@ const en = {
   header: {
     availability: 'LIVE',
     name: 'DApp Doctor',
+    homeLabel: 'DApp Doctor, home page',
     navigationLabel: 'Main navigation',
     skip: 'Skip to content',
     links: [
+      { label: 'Home', href: '/', availability: 'LIVE' },
       { label: 'Diagnose', href: '/diagnose', availability: 'LIVE' },
       { label: 'Compare', href: '/compare', availability: 'LIVE' },
       { label: 'Pro', href: '/history', availability: 'LIVE' },
@@ -166,9 +168,11 @@ const es: LandingCopy = {
   header: {
     availability: 'LIVE',
     name: 'DApp Doctor',
+    homeLabel: 'DApp Doctor, página de inicio',
     navigationLabel: 'Navegación principal',
     skip: 'Saltar al contenido',
     links: [
+      { label: 'Inicio', href: '/', availability: 'LIVE' },
       { label: 'Diagnosticar', href: '/diagnose', availability: 'LIVE' },
       { label: 'Comparar', href: '/compare', availability: 'LIVE' },
       { label: 'Pro', href: '/history', availability: 'LIVE' },
