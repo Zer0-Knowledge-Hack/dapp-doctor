@@ -35,15 +35,19 @@ export async function runDiagnosis(target: DiagnoseTarget): Promise<DiagnosisRep
     checks.push(notTested('contract-bytecode', 'Contract bytecode', noReach, true));
     checks.push(notTested('critical-read', 'Critical read', noReach, true));
   } else {
-    checks.push(await checkNetworkIdentity(target));
+    const network = await checkNetworkIdentity(target);
+    checks.push(network);
     checks.push(await checkNodeFreshness(target));
+    // Observed, not assumed: the chain the RPC reported, when it reported one.
+    const answeredChainId =
+      typeof network.observed?.actualChainId === 'number' ? network.observed.actualChainId : undefined;
 
     if (!target.contractAddress) {
       const reason = 'Did not run: no contract address was provided.';
       checks.push(notTested('contract-bytecode', 'Contract bytecode', reason, true));
       checks.push(notTested('critical-read', 'Critical read', reason, true));
     } else {
-      const bytecode = await checkContractBytecode(target);
+      const bytecode = await checkContractBytecode(target, answeredChainId);
       checks.push(bytecode);
 
       if (!target.criticalRead) {

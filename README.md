@@ -20,6 +20,7 @@ Built for the **Burning Token** hackathon by NERDCONF (September 2026).
 | DApp Doctor Pro: diagnosis history, sold with RevenueCat | ✅ live (Test Store purchases) |
 | Launch Check (`/launch`): the stricter bar before mainnet, a Pro feature | ✅ live |
 | RPC Heartbeat (`/heartbeat`): listen to a chain's pulse | ✅ live |
+| Spanish interface (English \| Español buttons in the header) | ✅ live |
 | MCP server for agents (`/api/mcp`) | ✅ live |
 | Config reader (paste a `.env` or config) | 🟡 built and tested; not yet in the web UI |
 | Nebius — AI root-cause analysis | ✖ not entered: the credits could not be redeemed from our country |
@@ -168,6 +169,18 @@ It runs entirely in the browser:
 - The "dead RPC" patient uses an `.invalid` address, which never resolves, so
   its flatline is real rather than staged.
 
+## In Spanish
+
+The header's **English | Español** buttons switch the whole interface,
+reports included. The choice is kept in a cookie, so the server renders the
+chosen language on the first paint.
+
+The engine, the API and the MCP server stay in English: they are the source of
+truth, and the Spanish report is a presentation of the same English report,
+applied after the verdict is made, so a translation can never change a
+verdict. `pnpm i18n` proves every sentence the engine writes has a Spanish
+rendering.
+
 ## Running it
 
 This project uses **pnpm**. Do not use npm or yarn: the lockfile is
@@ -188,7 +201,7 @@ pnpm verify
 It runs, in order: `typecheck`, `build`, `ssrf` (the guard), `billing`
 (entitlement rules), `intake` (the config reader), `mcp` (the agent tools and
 secret refusal), `launch` (the Launch Check rule table), `heartbeat` (the
-monitor's vital signs) and `smoke` (five scenarios against Base, live). The smoke test
+monitor's vital signs), `i18n` (every engine sentence in Spanish) and `smoke` (five scenarios against Base, live). The smoke test
 hits real public RPCs, so it can fail because a provider is down rather than
 because of the code.
 
@@ -274,6 +287,7 @@ src/
     diagnostics/          the engine: checks, gating, verdicts, SSRF guard
     launch/               Launch Check rules on top of the engine
     heartbeat/            vital signs from a block, and the browser-side RPC reads
+    i18n/                 the interface language and the engine's sentences in Spanish
     intake/extract.ts     reads RPC URL, chain and contract from any config text
     billing/              RevenueCat: browser purchase flow, server entitlements
     history/store.ts      Upstash Redis storage, redacted before writing

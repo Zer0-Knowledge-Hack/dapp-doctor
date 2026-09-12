@@ -7,11 +7,13 @@ import { Field } from '@/components/app/Field';
 import { Notice } from '@/components/app/Notice';
 import { Monitor, type MonitorHandle } from '@/components/heartbeat/Monitor';
 import { createMonitorSound, type MonitorSound } from '@/components/heartbeat/sound';
+import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import { Sheet } from '@/components/ui/Sheet';
 import { Stamp } from '@/components/ui/Stamp';
 import { describeChain } from '@/lib/diagnostics/networks';
 import type { OverallStatus } from '@/lib/diagnostics/types';
 import { isListenableUrl, readRpc } from '@/lib/heartbeat/listen';
+import { LOCALE, type Lang } from '@/lib/i18n/lang';
 import { CUSTOM_BLOCK_SECONDS, PATIENTS, type Patient } from '@/lib/heartbeat/patients';
 import {
   amplitude,
@@ -34,19 +36,137 @@ const SHOCKS_BEFORE_TIME_OF_DEATH = 3;
 /** What the monitor shows: the patient's pulse, or the monitor switched off. */
 type Display = Pulse | 'off';
 
-const STAMP: Record<Display, { status: OverallStatus; label: string; spoken: string }> = {
-  off: { status: 'NOT_TESTED', label: 'OFF', spoken: 'The monitor is off.' },
-  waiting: { status: 'NOT_TESTED', label: 'NO SIGNAL', spoken: 'Waiting for the first block.' },
-  alive: { status: 'READY', label: 'PULSE', spoken: 'Pulse detected: new blocks are arriving.' },
-  coma: { status: 'AT_RISK', label: 'COMA', spoken: 'Coma: the RPC answers, but no new block is arriving.' },
-  flatline: { status: 'BLOCKED', label: 'FLATLINE', spoken: 'Flatline: the RPC stopped answering.' },
+const STAMP_STATUS: Record<Display, OverallStatus> = {
+  off: 'NOT_TESTED',
+  waiting: 'NOT_TESTED',
+  alive: 'READY',
+  coma: 'AT_RISK',
+  flatline: 'BLOCKED',
 };
+
+const COPY = {
+  en: {
+    title: 'RPC Heartbeat',
+    intro: 'Put a stethoscope on a blockchain. Every beat is a new block: the spike is how many transactions it carried, the pitch is how full it was. When the RPC stops answering, you will hear it.',
+    patient: 'Patient',
+    stamp: {
+      off: { label: 'OFF', spoken: 'The monitor is off.' },
+      waiting: { label: 'NO SIGNAL', spoken: 'Waiting for the first block.' },
+      alive: { label: 'PULSE', spoken: 'Pulse detected: new blocks are arriving.' },
+      coma: { label: 'COMA', spoken: 'Coma: the RPC answers, but no new block is arriving.' },
+      flatline: { label: 'FLATLINE', spoken: 'Flatline: the RPC stopped answering.' },
+    } as Record<Display, { label: string; spoken: string }>,
+    patients: {} as Record<string, { label: string; note: string }>,
+    custom: { label: 'Your RPC', note: 'Read straight from your browser. The URL never reaches DApp Doctor.' },
+    listening: 'Listening.',
+    timeOfDeath: (time: string) => `Time of death ${time}.`,
+    off: 'Monitor off.',
+    perMinute: (rate: number) => ` ${rate} blocks per minute.`,
+    charging: 'CHARGING…',
+    clear: 'CLEAR!',
+    vitals: {
+      rate: 'Heart rate', rateUnit: 'blocks per minute',
+      block: 'Last block',
+      strength: 'Pulse strength', strengthUnit: 'transactions',
+      pressure: 'Blood pressure', pressureUnit: 'of the gas limit used',
+      since: 'Since the last block', sinceUnit: 'seconds',
+    },
+    shock: 'Defibrillate',
+    shockCharging: 'Charging…',
+    shockChecking: 'Checking for a pulse…',
+    stop: 'Stop listening',
+    again: 'Listen again',
+    soundOn: 'Turn sound on',
+    soundIsOn: 'Sound on',
+    diagnose: 'Find out why with a diagnosis',
+    badUrl: 'That is not an http(s) address. Paste the full RPC URL, starting with https://.',
+    coma: (block: string, age: number) => `It answers, but its chain stopped at block ${block}, ${age} s ago. A shock cannot fix a node that fell behind: listen to another RPC.`,
+    revived: (block: string) => `Pulse is back. Block ${block} came in.`,
+    dead: (time: string) => `No response after three shocks. Time of death: ${time}. The monitor is off.`,
+    noResponse: (reason: string, count: number, of: number) => `No response. ${reason} Shock ${count} of ${of}.`,
+    notABlock: 'The RPC answered, but not with a block.',
+    customLabel: 'Or listen to your own RPC',
+    customButton: 'Listen to it',
+    customHelp: ['Read straight from your browser to the RPC, with', 'and', 'only. The URL never reaches DApp Doctor, and a tab you are not looking at stops asking.'],
+    reading: 'Reading the monitor',
+    legend: (coma: number, failures: number) => [
+      ['A beat', 'A new block. Nothing else makes the trace spike: no block, no beat.'],
+      ['Taller spike', 'More transactions in that block.'],
+      ['Higher beep', 'A fuller block, closer to its gas limit.'],
+      ['Coma', `The RPC answers, but the chain it shows has not moved for ${coma} seconds. The node fell behind.`],
+      ['Flatline', `The RPC failed to answer ${failures} times in a row. Try the defibrillator.`],
+    ],
+    live: ['Everything on the monitor is live. The dead RPC is really unreachable: addresses ending in', 'never resolve, so its flatline is genuine.'],
+  },
+  es: {
+    title: 'Latido del RPC',
+    intro: 'Ponle un estetoscopio a una blockchain. Cada latido es un bloque nuevo: el pico es cuántas transacciones trajo, el tono es qué tan lleno venía. Cuando el RPC deje de responder, lo vas a escuchar.',
+    patient: 'Paciente',
+    stamp: {
+      off: { label: 'APAGADO', spoken: 'El monitor está apagado.' },
+      waiting: { label: 'SIN SEÑAL', spoken: 'Esperando el primer bloque.' },
+      alive: { label: 'PULSO', spoken: 'Hay pulso: están llegando bloques nuevos.' },
+      coma: { label: 'COMA', spoken: 'Coma: el RPC responde, pero no llegan bloques nuevos.' },
+      flatline: { label: 'LÍNEA PLANA', spoken: 'Línea plana: el RPC dejó de responder.' },
+    } as Record<Display, { label: string; spoken: string }>,
+    patients: {
+      base: { label: 'Base', note: 'Un bloque cada 2 segundos. Un corazón sano y rápido.' },
+      ethereum: { label: 'Ethereum', note: 'Un bloque cada 12 segundos. Tranquilo, como una ballena dormida.' },
+      'base-sepolia': { label: 'Base Sepolia', note: 'La gemela de pruebas. El mismo ritmo, sin nada en juego.' },
+      dead: { label: 'Un RPC muerto', note: 'Una dirección que nunca puede responder. Trae el desfibrilador.' },
+    } as Record<string, { label: string; note: string }>,
+    custom: { label: 'Tu RPC', note: 'Se lee directo desde tu navegador. La URL nunca llega a DApp Doctor.' },
+    listening: 'Escuchando.',
+    timeOfDeath: (time: string) => `Hora de muerte ${time}.`,
+    off: 'Monitor apagado.',
+    perMinute: (rate: number) => ` ${rate} bloques por minuto.`,
+    charging: 'CARGANDO…',
+    clear: '¡DESPEJEN!',
+    vitals: {
+      rate: 'Ritmo cardíaco', rateUnit: 'bloques por minuto',
+      block: 'Último bloque',
+      strength: 'Fuerza del pulso', strengthUnit: 'transacciones',
+      pressure: 'Presión', pressureUnit: 'del límite de gas usado',
+      since: 'Desde el último bloque', sinceUnit: 'segundos',
+    },
+    shock: 'Desfibrilar',
+    shockCharging: 'Cargando…',
+    shockChecking: 'Buscando pulso…',
+    stop: 'Dejar de escuchar',
+    again: 'Escuchar de nuevo',
+    soundOn: 'Activar el sonido',
+    soundIsOn: 'Sonido activado',
+    diagnose: 'Averigua por qué con un diagnóstico',
+    badUrl: 'Esa no es una dirección http(s). Pega la URL completa del RPC, empezando por https://.',
+    coma: (block: string, age: number) => `Responde, pero su cadena se detuvo en el bloque ${block}, hace ${age} s. Una descarga no arregla un nodo que se quedó atrás: escucha otro RPC.`,
+    revived: (block: string) => `Volvió el pulso. Llegó el bloque ${block}.`,
+    dead: (time: string) => `Sin respuesta después de tres descargas. Hora de muerte: ${time}. El monitor está apagado.`,
+    noResponse: (reason: string, count: number, of: number) => `Sin respuesta. ${reason} Descarga ${count} de ${of}.`,
+    notABlock: 'El RPC respondió, pero no con un bloque.',
+    customLabel: 'O escucha tu propio RPC',
+    customButton: 'Escucharlo',
+    customHelp: ['Se lee directo desde tu navegador al RPC, solo con', 'y', '. La URL nunca llega a DApp Doctor, y una pestaña que no estás mirando deja de preguntar.'],
+    reading: 'Cómo leer el monitor',
+    legend: (coma: number, failures: number) => [
+      ['Un latido', 'Un bloque nuevo. Nada más hace subir el trazo: sin bloque, no hay latido.'],
+      ['Pico más alto', 'Más transacciones en ese bloque.'],
+      ['Pitido más agudo', 'Un bloque más lleno, más cerca de su límite de gas.'],
+      ['Coma', `El RPC responde, pero la cadena que muestra no se movió en ${coma} segundos. El nodo se quedó atrás.`],
+      ['Línea plana', `El RPC no respondió ${failures} veces seguidas. Prueba el desfibrilador.`],
+    ],
+    live: ['Todo lo que muestra el monitor es en vivo. El RPC muerto es realmente inalcanzable: las direcciones que terminan en', 'nunca resuelven, así que su línea plana es real.'],
+  },
+} satisfies Record<Lang, unknown>;
 
 type Message = { tone: 'info' | 'success' | 'failure'; text: string } | null;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function HeartbeatPage() {
+  const lang = useLang();
+  const copy = COPY[lang];
+  const text = useEngineText();
+  const number = (value: number) => value.toLocaleString(LOCALE[lang]);
   const [target, setTarget] = useState<Patient>(PATIENTS[0]);
   const [customUrl, setCustomUrl] = useState('');
   const [listening, setListening] = useState(false);
@@ -75,7 +195,7 @@ export default function HeartbeatPage() {
     : listening
       ? pulseState({ latest, consecutiveFailures: failures, nowSeconds, expectedBlockSeconds: target.expectedBlockSeconds })
       : 'off';
-  const stamp = STAMP[pulse];
+  const stamp = { status: STAMP_STATUS[pulse], ...copy.stamp[pulse] };
   const rate = heartRate(samples);
 
   /** A block came in. Only a block we have not seen before makes the heart beat. */
@@ -160,16 +280,16 @@ export default function HeartbeatPage() {
   function listenToCustom() {
     const url = customUrl.trim();
     if (!isListenableUrl(url)) {
-      setMessage({ tone: 'failure', text: 'That is not an http(s) address. Paste the full RPC URL, starting with https://.' });
+      setMessage({ tone: 'failure', text: copy.badUrl });
       return;
     }
     start({
       id: 'custom',
-      label: 'Your RPC',
+      label: copy.custom.label,
       rpcUrl: url,
       chainId: null,
       expectedBlockSeconds: CUSTOM_BLOCK_SECONDS,
-      note: 'Read straight from your browser. The URL never reaches DApp Doctor.',
+      note: copy.custom.note,
     });
   }
 
@@ -214,11 +334,11 @@ export default function HeartbeatPage() {
       if (age > comaAfterSeconds(current.expectedBlockSeconds)) {
         setMessage({
           tone: 'info',
-          text: `It answers, but its chain stopped at block ${block.number.toLocaleString('en')}, ${age} s ago. A shock cannot fix a node that fell behind: listen to another RPC.`,
+          text: copy.coma(number(block.number), age),
         });
       } else {
         setShocks(0);
-        setMessage({ tone: 'success', text: `Pulse is back. Block ${block.number.toLocaleString('en')} came in.` });
+        setMessage({ tone: 'success', text: copy.revived(number(block.number)) });
       }
       return;
     }
@@ -226,13 +346,13 @@ export default function HeartbeatPage() {
     const count = shocks + 1;
     setShocks(count);
     if (count >= SHOCKS_BEFORE_TIME_OF_DEATH) {
-      const time = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const time = new Date().toLocaleTimeString(LOCALE[lang], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
       setTimeOfDeath(time);
       stop();
-      setMessage({ tone: 'failure', text: `No response after three shocks. Time of death: ${time}. The monitor is off.` });
+      setMessage({ tone: 'failure', text: copy.dead(time) });
     } else {
-      const reason = result.ok ? 'The RPC answered, but not with a block.' : result.reason;
-      setMessage({ tone: 'failure', text: `No response. ${reason} Shock ${count} of ${SHOCKS_BEFORE_TIME_OF_DEATH}.` });
+      const reason = result.ok ? copy.notABlock : text(result.reason);
+      setMessage({ tone: 'failure', text: copy.noResponse(reason, count, SHOCKS_BEFORE_TIME_OF_DEATH) });
     }
   }
 
@@ -280,16 +400,11 @@ export default function HeartbeatPage() {
 
   return (
     <AppShell
-      title="RPC Heartbeat"
-      intro={
-        <p>
-          Put a stethoscope on a blockchain. Every beat is a new block: the spike is how many transactions it carried,
-          the pitch is how full it was. When the RPC stops answering, you will hear it.
-        </p>
-      }
+      title={copy.title}
+      intro={<p>{copy.intro}</p>}
     >
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <span className="text-sm font-semibold">Patient</span>
+        <span className="text-sm font-semibold">{copy.patient}</span>
         {PATIENTS.map((patient) => (
           <button
             key={patient.id}
@@ -298,50 +413,50 @@ export default function HeartbeatPage() {
             aria-pressed={target.id === patient.id}
             className="btn-plain min-h-11 px-4 text-sm"
           >
-            {patient.label}
+            {copy.patients[patient.id]?.label ?? patient.label}
           </button>
         ))}
       </div>
-      <p className="mt-3 text-sm text-muted">{target.note}</p>
+      <p className="mt-3 text-sm text-muted">{copy.patients[target.id]?.note ?? (target.id === 'custom' ? copy.custom.note : target.note)}</p>
 
       <div ref={sheet} className="mt-6">
         <Sheet className="px-5 py-6 sm:px-8 sm:py-8">
           <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
             <div className="min-w-0">
-              <h2 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.02] font-black">{target.label}</h2>
+              <h2 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.02] font-black">{target.id === 'custom' ? copy.custom.label : copy.patients[target.id]?.label ?? target.label}</h2>
               <p className="mt-2 text-sm text-muted">
                 {chainName ? `${chainName}. ` : ''}
-                {listening ? 'Listening.' : timeOfDeath ? `Time of death ${timeOfDeath}.` : 'Monitor off.'}
+                {listening ? copy.listening : timeOfDeath ? copy.timeOfDeath(timeOfDeath) : copy.off}
               </p>
             </div>
             <Stamp key={stamp.label} status={stamp.status} label={stamp.label} />
           </div>
 
           <div className="relative mt-6">
-            <Monitor ref={monitor} running={listening} label={`${stamp.spoken}${rate ? ` ${Math.round(rate)} blocks per minute.` : ''}`} className="h-40 sm:h-48" />
+            <Monitor ref={monitor} running={listening} label={`${stamp.spoken}${rate ? copy.perMinute(Math.round(rate)) : ''}`} className="h-40 sm:h-48" />
             {(shock === 'charging' || shock === 'clear') && (
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 flex items-center justify-center font-display text-[clamp(3rem,10vw,6.5rem)] leading-none font-black text-pen"
               >
-                {shock === 'charging' ? 'CHARGING…' : 'CLEAR!'}
+                {shock === 'charging' ? copy.charging : copy.clear}
               </span>
             )}
           </div>
 
           <dl className="mt-6 grid grid-cols-2 border-y-2 border-ink sm:grid-cols-5">
             {/* Phone: heart rate across the top, then two by two. Wider: one row of five. */}
-            <Vital className="col-span-2 border-b sm:col-span-1 sm:border-r sm:border-b-0" label="Heart rate" unit="blocks per minute" value={rate ? String(Math.round(rate)) : '—'} />
-            <Vital className="border-r border-b sm:border-b-0" label="Last block" value={latest ? latest.number.toLocaleString('en') : '—'} long />
-            <Vital className="border-b sm:border-r sm:border-b-0" label="Pulse strength" unit="transactions" value={latest ? String(latest.txCount) : '—'} />
-            <Vital className="border-r" label="Blood pressure" unit="of the gas limit used" value={latest ? `${Math.round(fullness(latest) * 100)}%` : '—'} />
-            <Vital label="Since the last block" unit="seconds" value={since !== null ? String(since) : '—'} />
+            <Vital className="col-span-2 border-b sm:col-span-1 sm:border-r sm:border-b-0" label={copy.vitals.rate} unit={copy.vitals.rateUnit} value={rate ? String(Math.round(rate)) : '—'} />
+            <Vital className="border-r border-b sm:border-b-0" label={copy.vitals.block} value={latest ? number(latest.number) : '—'} long />
+            <Vital className="border-b sm:border-r sm:border-b-0" label={copy.vitals.strength} unit={copy.vitals.strengthUnit} value={latest ? String(latest.txCount) : '—'} />
+            <Vital className="border-r" label={copy.vitals.pressure} unit={copy.vitals.pressureUnit} value={latest ? `${Math.round(fullness(latest) * 100)}%` : '—'} />
+            <Vital label={copy.vitals.since} unit={copy.vitals.sinceUnit} value={since !== null ? String(since) : '—'} />
           </dl>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             {needsShock && (
               <button type="button" onClick={defibrillate} disabled={shock !== null} className="btn-pen min-h-12 px-6 disabled:opacity-60">
-                {shock === 'checking' ? 'Checking for a pulse…' : shock ? 'Charging…' : 'Defibrillate'}
+                {shock === 'checking' ? copy.shockChecking : shock ? copy.shockCharging : copy.shock}
               </button>
             )}
             <button
@@ -349,10 +464,10 @@ export default function HeartbeatPage() {
               onClick={() => (listening ? stop() : start(targetRef.current))}
               className={`${needsShock ? 'btn-plain' : 'btn-pen'} min-h-12 px-6`}
             >
-              {listening ? 'Stop listening' : 'Listen again'}
+              {listening ? copy.stop : copy.again}
             </button>
             <button type="button" onClick={toggleSound} aria-pressed={!muted} className="btn-plain min-h-12 px-5">
-              {muted ? 'Turn sound on' : 'Sound on'}
+              {muted ? copy.soundOn : copy.soundIsOn}
             </button>
           </div>
 
@@ -366,9 +481,9 @@ export default function HeartbeatPage() {
           {!message && pulse === 'flatline' && lastError && (
             <div className="mt-5">
               <Notice tone="failure">
-                {lastError}{' '}
+                {text(lastError)}{' '}
                 <Link href="/diagnose" prefetch={false} className="font-semibold underline underline-offset-4">
-                  Find out why with a diagnosis
+                  {copy.diagnose}
                 </Link>
                 .
               </Notice>
@@ -378,29 +493,22 @@ export default function HeartbeatPage() {
       </div>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-        <Field label="Or listen to your own RPC" value={customUrl} onChange={setCustomUrl} placeholder="https://" />
+        <Field label={copy.customLabel} value={customUrl} onChange={setCustomUrl} placeholder="https://" />
         <button type="button" onClick={listenToCustom} className="btn-plain min-h-12 px-5">
-          Listen to it
+          {copy.customButton}
         </button>
       </div>
       <p className="mt-3 max-w-[65ch] text-sm text-muted">
-        Read straight from your browser to the RPC, with <span className="font-mono">eth_chainId</span> and{' '}
-        <span className="font-mono">eth_getBlockByNumber</span> only. The URL never reaches DApp Doctor, and a tab you
-        are not looking at stops asking.
+        {copy.customHelp[0]} <span className="font-mono">eth_chainId</span> {copy.customHelp[1]}{' '}
+        <span className="font-mono">eth_getBlockByNumber</span>{lang === 'es' ? '' : ' '}{copy.customHelp[2]}
       </p>
 
       <section aria-labelledby="reading-heading" className="mt-14">
         <h2 id="reading-heading" className="font-display text-3xl leading-none font-black sm:text-4xl">
-          Reading the monitor
+          {copy.reading}
         </h2>
         <dl className="mt-6 border-t-2 border-ink">
-          {[
-            ['A beat', 'A new block. Nothing else makes the trace spike: no block, no beat.'],
-            ['Taller spike', 'More transactions in that block.'],
-            ['Higher beep', 'A fuller block, closer to its gas limit.'],
-            ['Coma', `The RPC answers, but the chain it shows has not moved for ${comaAfterSeconds(target.expectedBlockSeconds)} seconds. The node fell behind.`],
-            ['Flatline', `The RPC failed to answer ${FLATLINE_AFTER_FAILURES} times in a row. Try the defibrillator.`],
-          ].map(([term, meaning]) => (
+          {copy.legend(comaAfterSeconds(target.expectedBlockSeconds), FLATLINE_AFTER_FAILURES).map(([term, meaning]) => (
             <div key={term} className="grid gap-1 border-b border-ink py-4 sm:grid-cols-[12rem_1fr] sm:gap-6">
               <dt className="font-semibold">{term}</dt>
               <dd className="max-w-[65ch]">{meaning}</dd>
@@ -408,8 +516,7 @@ export default function HeartbeatPage() {
           ))}
         </dl>
         <p className="mt-6 max-w-[65ch] text-sm leading-relaxed">
-          Everything on the monitor is live. The dead RPC is really unreachable: addresses ending in{' '}
-          <span className="font-mono">.invalid</span> never resolve, so its flatline is genuine.
+          {copy.live[0]} <span className="font-mono">.invalid</span> {copy.live[1]}
         </p>
       </section>
     </AppShell>

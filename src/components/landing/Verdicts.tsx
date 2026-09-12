@@ -1,7 +1,11 @@
+'use client';
+
 import { Stamp } from '@/components/ui/Stamp';
-import { isLive, landing } from './content';
+import { isLive } from './content';
+import { useLanding } from './useLanding';
 
 export function Verdicts() {
+  const landing = useLanding();
   const content = landing.verdicts;
   return (
     <section aria-labelledby="verdicts-heading">

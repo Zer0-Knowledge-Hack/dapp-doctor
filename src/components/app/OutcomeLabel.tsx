@@ -1,4 +1,8 @@
+'use client';
+
+import { useLang } from '@/components/i18n/LanguageProvider';
 import type { CheckOutcome, OverallStatus } from '@/lib/diagnostics/types';
+import { OUTCOME_LABELS, STATUS_LABELS } from '@/lib/i18n/engineText';
 
 /**
  * A check outcome or verdict as the landing's comparison table shows it: black
@@ -16,9 +20,11 @@ const BAR: Record<CheckOutcome | OverallStatus, string> = {
 };
 
 export function OutcomeLabel({ outcome }: { outcome: CheckOutcome | OverallStatus }): React.ReactElement {
+  const lang = useLang();
+  const label = outcome in OUTCOME_LABELS[lang] ? OUTCOME_LABELS[lang][outcome as CheckOutcome] : STATUS_LABELS[lang][outcome as OverallStatus];
   return (
     <span className={`inline-block shrink-0 border-l-[3px] pl-1.5 text-sm font-semibold whitespace-nowrap ${BAR[outcome]}`}>
-      {outcome.replace('_', ' ')}
+      {label}
     </span>
   );
 }

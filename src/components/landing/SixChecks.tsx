@@ -1,6 +1,10 @@
-import { isLive, landing } from './content';
+'use client';
+
+import { isLive } from './content';
+import { useLanding } from './useLanding';
 
 export function SixChecks() {
+  const landing = useLanding();
   const content = landing.sixChecks;
   return (
     <section aria-labelledby="checks-heading">

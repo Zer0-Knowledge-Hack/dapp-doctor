@@ -1,5 +1,9 @@
+'use client';
+
 import { Ecg } from '@/components/ecg/Ecg';
-import { landing } from '@/components/landing/content';
+import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
+import { useLanding } from '@/components/landing/useLanding';
+import { LOCALE, type Lang } from '@/lib/i18n/lang';
 import { Sheet } from '@/components/ui/Sheet';
 import { Stamp } from '@/components/ui/Stamp';
 import { describeChain } from '@/lib/diagnostics/networks';
@@ -12,21 +16,24 @@ import { OutcomeLabel } from './OutcomeLabel';
  * The stamp and the strip carry the bold moment; the rows stay quiet.
  */
 export function Report({ report }: { report: DiagnosisReport }): React.ReactElement {
+  const lang = useLang();
+  const when = formatWhen(report.startedAt, lang);
+  const chain = describeChain(report.target.expectedChainId);
+  const details =
+    lang === 'es'
+      ? `${when}. Espera ${chain}. ${report.checks.length} chequeos en ${report.durationMs} ms.`
+      : `${when}. Expects ${chain}. ${report.checks.length} checks in ${report.durationMs} ms.`;
   return (
     <section aria-labelledby="result-heading" className="mt-12 sm:mt-16">
-      <VerdictSheet
-        status={report.status}
-        headline={report.headline}
-        details={`${formatWhen(report.startedAt)}. Expects ${describeChain(report.target.expectedChainId)}. ${report.checks.length} checks in ${report.durationMs} ms.`}
-      />
+      <VerdictSheet status={report.status} headline={report.headline} details={details} />
       <CheckRows items={report.checks} />
     </section>
   );
 }
 
-/** English, like the rest of the interface: the browser's own locale would mix another language's date format in. */
-export function formatWhen(iso: string): string {
-  return new Date(iso).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' });
+/** In the page's language, never the browser's: that would mix another language's date format in. */
+export function formatWhen(iso: string, lang: Lang): string {
+  return new Date(iso).toLocaleString(LOCALE[lang], { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 /** The verdict: headline, stamp and heartbeat. Its heading is where a new result scrolls to. */
@@ -35,6 +42,8 @@ export function VerdictSheet({ status, headline, details }: {
   headline: string;
   details: string;
 }): React.ReactElement {
+  const text = useEngineText();
+  const landing = useLanding();
   return (
     <Sheet className="px-5 py-6 sm:px-8 sm:py-8">
       <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-5">
@@ -44,7 +53,7 @@ export function VerdictSheet({ status, headline, details }: {
             tabIndex={-1}
             className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.02] font-black text-balance outline-none"
           >
-            {headline}
+            {text(headline)}
           </h2>
           <p className="mt-3 text-sm text-muted">{details}</p>
         </div>
@@ -68,8 +77,15 @@ export interface CheckRow {
   observed?: Record<string, unknown>;
 }
 
+const ROW_LABELS: Record<Lang, { action: string; observed: string }> = {
+  en: { action: 'What to do: ', observed: 'Observed data' },
+  es: { action: 'Qué hacer: ', observed: 'Datos observados' },
+};
+
 /** One ruled, numbered row per finding, with what to do and the raw observation. */
 export function CheckRows({ items }: { items: CheckRow[] }): React.ReactElement {
+  const text = useEngineText();
+  const labels = ROW_LABELS[useLang()];
   return (
     <ol className="mt-10 border-t-2 border-ink">
       {items.map((check, index) => (
@@ -79,19 +95,19 @@ export function CheckRows({ items }: { items: CheckRow[] }): React.ReactElement 
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <h3 className="text-lg leading-snug font-bold">{check.title}</h3>
+              <h3 className="text-lg leading-snug font-bold">{text(check.title)}</h3>
               <OutcomeLabel outcome={check.outcome} />
             </div>
-            <p className="mt-2 max-w-[70ch] break-words">{check.summary}</p>
+            <p className="mt-2 max-w-[70ch] break-words">{text(check.summary)}</p>
             {check.action && (
               <p className="mt-3 max-w-[70ch] border-l-[3px] border-pen pl-3 text-pen">
-                <span className="font-semibold">What to do: </span>
-                {check.action}
+                <span className="font-semibold">{labels.action}</span>
+                {text(check.action)}
               </p>
             )}
             {check.observed && (
               <details className="mt-3 text-sm">
-                <summary className="w-fit cursor-pointer text-muted underline underline-offset-4">Observed data</summary>
+                <summary className="w-fit cursor-pointer text-muted underline underline-offset-4">{labels.observed}</summary>
                 <pre className="mt-2 overflow-x-auto border border-ink bg-sheet p-3 font-mono text-xs leading-relaxed">
                   {JSON.stringify(check.observed, null, 2)}
                 </pre>

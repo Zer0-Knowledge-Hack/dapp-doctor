@@ -1,7 +1,10 @@
+'use client';
+
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { landing } from './content';
+import { useLanding } from './useLanding';
 
 export function FinalCall() {
+  const landing = useLanding();
   const content = landing.finalCall;
   return (
     <section aria-labelledby="final-heading" className="border-y-[3px] border-ink py-12 sm:py-16">

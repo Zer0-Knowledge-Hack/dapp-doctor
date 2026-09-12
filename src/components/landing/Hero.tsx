@@ -1,9 +1,12 @@
+'use client';
+
 import { Ecg } from '@/components/ecg/Ecg';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Sheet } from '@/components/ui/Sheet';
-import { landing } from './content';
+import { useLanding } from './useLanding';
 
 export function Hero() {
+  const landing = useLanding();
   const content = landing.hero;
   return (
     <section aria-labelledby="hero-heading">

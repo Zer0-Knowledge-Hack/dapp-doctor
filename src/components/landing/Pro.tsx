@@ -1,7 +1,11 @@
+'use client';
+
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { isLive, landing } from './content';
+import { isLive } from './content';
+import { useLanding } from './useLanding';
 
 export function Pro() {
+  const landing = useLanding();
   const content = landing.pro;
   return (
     <section aria-labelledby="pro-heading">

@@ -6,6 +6,7 @@ import type { Offering, Package } from '@revenuecat/purchases-js';
 import { AppShell } from '@/components/app/AppShell';
 import { Notice } from '@/components/app/Notice';
 import { OutcomeLabel } from '@/components/app/OutcomeLabel';
+import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import type { StoredReport } from '@/lib/history/store';
 import {
   getCurrentOffering,
@@ -19,6 +20,7 @@ import {
 } from '@/lib/billing/client';
 import { USER_ID_HEADER } from '@/lib/billing/constants';
 import { describeChain } from '@/lib/diagnostics/networks';
+import { LOCALE, type Lang } from '@/lib/i18n/lang';
 
 type AccessState =
   | { kind: 'loading' }
@@ -29,23 +31,84 @@ type AccessState =
 
 type Message = { tone: 'info' | 'success' | 'failure'; text: string } | null;
 
+const COPY = {
+  en: {
+    title: 'Diagnosis history',
+    intro: 'Pro keeps every diagnosis you run, so you can see when a configuration broke and prove when it was fixed.',
+    checking: 'Checking your access…',
+    disabled: 'Diagnosis history is not enabled on this deployment yet. Diagnosis and comparison stay free and work as usual.',
+    expiredHeading: 'Your Pro access has expired.',
+    offerHeading: 'Keep every diagnosis with Pro.',
+    expiredBody: (date?: string) => `Access ended${date ? ` on ${date}` : ''}. Your history is kept; renew to see it again.`,
+    offerBody: 'Every diagnosis you run is saved automatically, and Launch Check holds your configuration to a stricter bar before you go to mainnet. Diagnosis and before/after comparison stay free.',
+    buy: (plan: string) => `Buy ${plan}`,
+    paywall: 'Compare plans in the paywall',
+    noPlans: 'No plans are on sale right now.',
+    testStore: 'Purchases on this deployment go through RevenueCat Test Store. They are test transactions: no card is charged.',
+    active: 'Pro is active',
+    lifetime: 'Lifetime access',
+    renews: (date: string) => `Renews on ${date}`,
+    ends: (date: string) => `Ends on ${date}`,
+    testPurchase: 'Test Store purchase',
+    runLaunch: 'Run Launch Check',
+    manage: 'Manage subscription',
+    yours: 'Your diagnoses',
+    noStorage: 'Your Pro access is confirmed. History storage is not set up on this deployment yet, so new diagnoses are not being saved.',
+    empty: ['No diagnoses saved yet.', 'Run one', 'and it will appear here.'],
+    expects: 'expects',
+    period: { none: 'one-time', P1M: 'per month', P1Y: 'per year', P1W: 'per week', every: 'every' },
+    plans: {} as Record<string, string>,
+  },
+  es: {
+    title: 'Historial de diagnósticos',
+    intro: 'Pro guarda cada diagnóstico que corres, para ver cuándo se rompió una configuración y probar cuándo se arregló.',
+    checking: 'Revisando tu acceso…',
+    disabled: 'El historial todavía no está habilitado en este despliegue. El diagnóstico y la comparación siguen gratis y funcionan como siempre.',
+    expiredHeading: 'Tu acceso Pro venció.',
+    offerHeading: 'Guarda cada diagnóstico con Pro.',
+    expiredBody: (date?: string) => `El acceso terminó${date ? ` el ${date}` : ''}. Tu historial se conserva; renueva para volver a verlo.`,
+    offerBody: 'Cada diagnóstico que corres se guarda solo, y Launch Check le exige más a tu configuración antes de ir a mainnet. El diagnóstico y la comparación antes/después siguen gratis.',
+    buy: (plan: string) => `Comprar ${plan}`,
+    paywall: 'Comparar planes en el paywall',
+    noPlans: 'No hay planes a la venta ahora.',
+    testStore: 'Las compras en este despliegue pasan por RevenueCat Test Store. Son transacciones de prueba: no se cobra ninguna tarjeta.',
+    active: 'Pro está activo',
+    lifetime: 'Acceso de por vida',
+    renews: (date: string) => `Se renueva el ${date}`,
+    ends: (date: string) => `Termina el ${date}`,
+    testPurchase: 'Compra de Test Store',
+    runLaunch: 'Correr Launch Check',
+    manage: 'Administrar la suscripción',
+    yours: 'Tus diagnósticos',
+    noStorage: 'Tu acceso Pro está confirmado. El guardado del historial todavía no está configurado en este despliegue, así que los diagnósticos nuevos no se guardan.',
+    empty: ['Todavía no hay diagnósticos guardados.', 'Corre uno', 'y aparecerá aquí.'],
+    expects: 'espera',
+    period: { none: 'pago único', P1M: 'por mes', P1Y: 'por año', P1W: 'por semana', every: 'cada' },
+    // Package names come from RevenueCat in English; these are the ones this offering sells.
+    plans: { $rc_monthly: 'Mensual', $rc_annual: 'Anual', $rc_lifetime: 'De por vida' } as Record<string, string>,
+  },
+} satisfies Record<Lang, unknown>;
+
+type Copy = (typeof COPY)[Lang];
+
 /** "P1M" → "per month". A null period is a one-time (lifetime) purchase. */
-function describePeriod(period: string | null): string {
-  if (!period) return 'one-time';
-  if (period === 'P1M') return 'per month';
-  if (period === 'P1Y') return 'per year';
-  if (period === 'P1W') return 'per week';
-  return `every ${period.replace(/^P/, '').toLowerCase()}`;
+function describePeriod(period: string | null, copy: Copy): string {
+  if (!period) return copy.period.none;
+  if (period === 'P1M' || period === 'P1Y' || period === 'P1W') return copy.period[period];
+  return `${copy.period.every} ${period.replace(/^P/, '').toLowerCase()}`;
 }
 
-function formatDate(value: string | Date): string {
-  // English, like the rest of the interface, whatever the browser's locale.
-  return new Date(value).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' });
+/** In the page's language, whatever the browser's locale. */
+function formatDate(value: string | Date, lang: Lang): string {
+  return new Date(value).toLocaleDateString(LOCALE[lang], { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function HistoryPage() {
+  const lang = useLang();
+  const copy = COPY[lang];
+  const text = useEngineText();
   const [access, setAccess] = useState<AccessState>({ kind: 'loading' });
   const [offering, setOffering] = useState<Offering | null>(null);
   const [status, setStatus] = useState<ProStatus | null>(null);
@@ -171,41 +234,38 @@ export default function HistoryPage() {
 
   return (
     <AppShell
-      title="Diagnosis history"
-      intro={<p>Pro keeps every diagnosis you run, so you can see when a configuration broke and prove when it was fixed.</p>}
+      title={copy.title}
+      intro={<p>{copy.intro}</p>}
     >
       {message && (
         <div className="mt-8">
-          <Notice tone={message.tone}>{message.text}</Notice>
+          <Notice tone={message.tone}>{text(message.text)}</Notice>
         </div>
       )}
 
-      {access.kind === 'loading' && <p className="mt-10 text-muted">Checking your access…</p>}
+      {access.kind === 'loading' && <p className="mt-10 text-muted">{copy.checking}</p>}
 
       {access.kind === 'disabled' && (
         <div className="mt-10">
-          <Notice>
-            Diagnosis history is not enabled on this deployment yet. Diagnosis and comparison stay free and work as
-            usual.
-          </Notice>
+          <Notice>{copy.disabled}</Notice>
         </div>
       )}
 
       {access.kind === 'error' && (
         <div className="mt-10">
-          <Notice tone="failure">{access.message}</Notice>
+          <Notice tone="failure">{text(access.message)}</Notice>
         </div>
       )}
 
       {access.kind === 'locked' && (
         <section aria-labelledby="offer-heading" className="mt-12">
           <h2 id="offer-heading" className="font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">
-            {access.reason === 'expired' ? 'Your Pro access has expired.' : 'Keep every diagnosis with Pro.'}
+            {access.reason === 'expired' ? copy.expiredHeading : copy.offerHeading}
           </h2>
           <p className="mt-5 max-w-[65ch]">
             {access.reason === 'expired'
-              ? `Access ended${access.expiredAt ? ` on ${formatDate(access.expiredAt)}` : ''}. Your history is kept; renew to see it again.`
-              : 'Every diagnosis you run is saved automatically, and Launch Check holds your configuration to a stricter bar before you go to mainnet. Diagnosis and before/after comparison stay free.'}
+              ? copy.expiredBody(access.expiredAt ? formatDate(access.expiredAt, lang) : undefined)
+              : copy.offerBody}
           </p>
 
           {offering ? (
@@ -213,20 +273,21 @@ export default function HistoryPage() {
               <dl className="mt-9 grid border-y-2 border-ink md:grid-cols-3">
                 {offering.availablePackages.map((rcPackage) => {
                   const product = rcPackage.webBillingProduct;
+                  const planName = copy.plans[rcPackage.identifier] ?? product.title;
                   const price = (product.currentPrice.amountMicros / 1_000_000).toFixed(2);
                   return (
                     <div
                       key={rcPackage.identifier}
                       className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-4 border-b border-ink py-6 last:border-b-0 md:block md:border-r md:border-b-0 md:px-7 md:py-8 md:first:pl-0 md:last:border-r-0"
                     >
-                      <dt className="text-lg font-semibold">{product.title}</dt>
+                      <dt className="text-lg font-semibold">{planName}</dt>
                       <dd className="md:mt-4">
                         <div className="flex items-baseline justify-end gap-2 md:justify-start">
                           <span className="text-sm text-muted">{product.currentPrice.currency}</span>
                           <span className="font-display text-5xl leading-none font-bold sm:text-6xl">{price}</span>
                         </div>
                         <span className="mt-2 block text-right text-sm text-muted md:text-left">
-                          {describePeriod(product.normalPeriodDuration)}
+                          {describePeriod(product.normalPeriodDuration, copy)}
                         </span>
                       </dd>
                       <dd className="col-span-2 md:mt-6">
@@ -236,7 +297,7 @@ export default function HistoryPage() {
                           onClick={() => buy(rcPackage)}
                           className="btn-pen min-h-12 w-full px-5 disabled:opacity-60 md:w-auto"
                         >
-                          Buy {product.title}
+                          {copy.buy(planName)}
                         </button>
                       </dd>
                     </div>
@@ -249,16 +310,15 @@ export default function HistoryPage() {
                 onClick={openPaywall}
                 className="mt-6 min-h-11 text-sm font-semibold underline underline-offset-4 disabled:opacity-60"
               >
-                Compare plans in the paywall
+                {copy.paywall}
               </button>
             </>
           ) : (
-            <p className="mt-8 text-muted">No plans are on sale right now.</p>
+            <p className="mt-8 text-muted">{copy.noPlans}</p>
           )}
 
           <p className="mt-6 max-w-[65ch] border-l-4 border-ink pl-4 text-sm leading-relaxed">
-            Purchases on this deployment go through RevenueCat Test Store. They are test transactions: no card is
-            charged.
+            {copy.testStore}
           </p>
         </section>
       )}
@@ -266,15 +326,15 @@ export default function HistoryPage() {
       {access.kind === 'unlocked' && (
         <section aria-labelledby="history-heading" className="mt-12">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-l-4 border-triage-green bg-sheet px-4 py-3 text-sm">
-            <span className="font-semibold">Pro is active</span>
+            <span className="font-semibold">{copy.active}</span>
             <span className="text-muted">
               {access.expiresAt === null
-                ? 'Lifetime access'
-                : `${status?.willRenew ? 'Renews' : 'Ends'} on ${formatDate(access.expiresAt)}`}
+                ? copy.lifetime
+                : (status?.willRenew ? copy.renews : copy.ends)(formatDate(access.expiresAt, lang))}
             </span>
-            {status?.store === 'test_store' && <span className="text-muted">Test Store purchase</span>}
+            {status?.store === 'test_store' && <span className="text-muted">{copy.testPurchase}</span>}
             <Link href="/launch" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
-              Run Launch Check
+              {copy.runLaunch}
             </Link>
             {status?.managementURL && (
               <a
@@ -283,27 +343,24 @@ export default function HistoryPage() {
                 rel="noreferrer"
                 className="ml-auto font-semibold underline underline-offset-4"
               >
-                Manage subscription
+                {copy.manage}
               </a>
             )}
           </div>
 
           <h2 id="history-heading" className="mt-10 mb-6 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">
-            Your diagnoses
+            {copy.yours}
           </h2>
 
           {!access.storage ? (
-            <Notice>
-              Your Pro access is confirmed. History storage is not set up on this deployment yet, so new diagnoses are
-              not being saved.
-            </Notice>
+            <Notice>{copy.noStorage}</Notice>
           ) : access.reports.length === 0 ? (
             <Notice tone="action">
-              No diagnoses saved yet.{' '}
+              {copy.empty[0]}{' '}
               <Link href="/diagnose" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
-                Run one
+                {copy.empty[1]}
               </Link>{' '}
-              and it will appear here.
+              {copy.empty[2]}
             </Notice>
           ) : (
             <ol className="border-t-2 border-ink">
@@ -311,11 +368,11 @@ export default function HistoryPage() {
                 <li key={entry.id} className="border-b border-ink py-5">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                     <OutcomeLabel outcome={entry.report.status} />
-                    <span className="text-sm text-muted">{new Date(entry.savedAt).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                    <span className="text-sm text-muted">{new Date(entry.savedAt).toLocaleString(LOCALE[lang], { dateStyle: 'medium', timeStyle: 'short' })}</span>
                   </div>
-                  <p className="mt-2 max-w-[70ch] font-semibold">{entry.report.headline}</p>
+                  <p className="mt-2 max-w-[70ch] font-semibold">{text(entry.report.headline)}</p>
                   <p className="mt-1 text-sm text-muted">
-                    <span className="font-mono break-all">{entry.report.target.rpcUrl}</span>, expects{' '}
+                    <span className="font-mono break-all">{entry.report.target.rpcUrl}</span>, {copy.expects}{' '}
                     {describeChain(entry.report.target.expectedChainId)}
                   </p>
                 </li>

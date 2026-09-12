@@ -7,8 +7,10 @@ import { Field } from '@/components/app/Field';
 import { Notice } from '@/components/app/Notice';
 import { Report } from '@/components/app/Report';
 import { revealResult } from '@/components/app/revealResult';
+import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import { Sheet } from '@/components/ui/Sheet';
 import { getOrCreateUserId, isBillingEnabled } from '@/lib/billing/client';
+import type { Lang } from '@/lib/i18n/lang';
 import type { DiagnosisReport } from '@/lib/diagnostics/types';
 
 /** Set by the API when the request carried a user id: whether the run was kept in history. */
@@ -24,10 +26,55 @@ interface FormState {
   criticalReadSignature: string;
 }
 
-const PRESETS: Record<string, { label: string; hint: string; values: FormState }> = {
+const COPY = {
+  en: {
+    title: 'Diagnose a dApp',
+    intro: 'Six read-only checks on the RPC configuration your app runs on. No private keys, no seed phrases, no transactions.',
+    tryIt: 'Try it on',
+    presets: {
+      broken: { label: 'Broken demo', hint: 'The app points at Base Mainnet while expecting Base Sepolia. The typical silent failure.' },
+      healthy: { label: 'Correct configuration', hint: 'Same app, network and fallback configured properly. Useful to compare before and after.' },
+    },
+    fields: {
+      rpcUrl: 'Primary RPC',
+      fallbackRpcUrl: 'Fallback RPC (optional)',
+      expectedChainId: 'Expected chain ID',
+      contractAddress: 'Contract address (optional)',
+      criticalReadSignature: 'Critical read (optional)',
+    },
+    run: 'Diagnose',
+    running: 'Diagnosing…',
+    failed: 'The diagnosis failed.',
+    unreachable: 'Could not reach the diagnostic engine.',
+    saved: ['Saved to your', 'diagnosis history', '. Launching on mainnet?', 'Run Launch Check', '.'],
+    upsell: ['Keep every diagnosis and check your launch with Pro', '. Diagnosis stays free.'],
+  },
+  es: {
+    title: 'Diagnosticar una dApp',
+    intro: 'Seis chequeos de solo lectura sobre la configuración RPC de tu app. Sin claves privadas, sin frases semilla, sin transacciones.',
+    tryIt: 'Pruébalo con',
+    presets: {
+      broken: { label: 'Demo rota', hint: 'La app apunta a Base Mainnet pero espera Base Sepolia. La falla silenciosa típica.' },
+      healthy: { label: 'Configuración correcta', hint: 'La misma app, con la red y el respaldo bien configurados. Sirve para comparar antes y después.' },
+    },
+    fields: {
+      rpcUrl: 'RPC principal',
+      fallbackRpcUrl: 'RPC de respaldo (opcional)',
+      expectedChainId: 'Chain ID esperado',
+      contractAddress: 'Dirección del contrato (opcional)',
+      criticalReadSignature: 'Lectura crítica (opcional)',
+    },
+    run: 'Diagnosticar',
+    running: 'Diagnosticando…',
+    failed: 'El diagnóstico falló.',
+    unreachable: 'No se pudo llegar al motor de diagnóstico.',
+    saved: ['Guardado en tu', 'historial de diagnósticos', '. ¿Vas a lanzar en mainnet?', 'Corre Launch Check', '.'],
+    upsell: ['Guarda cada diagnóstico y revisa tu lanzamiento con Pro', '. El diagnóstico sigue siendo gratis.'],
+  },
+} satisfies Record<Lang, unknown>;
+
+const PRESETS: Record<string, { values: FormState }> = {
   broken: {
-    label: 'Broken demo',
-    hint: 'The app points at Base Mainnet while expecting Base Sepolia. The typical silent failure.',
     values: {
       rpcUrl: 'https://mainnet.base.org',
       fallbackRpcUrl: '',
@@ -37,8 +84,6 @@ const PRESETS: Record<string, { label: string; hint: string; values: FormState }
     },
   },
   healthy: {
-    label: 'Correct configuration',
-    hint: 'Same app, network and fallback configured properly. Useful to compare before and after.',
     values: {
       rpcUrl: 'https://mainnet.base.org',
       fallbackRpcUrl: 'https://base-rpc.publicnode.com',
@@ -50,6 +95,8 @@ const PRESETS: Record<string, { label: string; hint: string; values: FormState }
 };
 
 export default function DiagnosePage() {
+  const copy = COPY[useLang()];
+  const text = useEngineText();
   const [form, setForm] = useState<FormState>(PRESETS.broken.values);
   const [report, setReport] = useState<DiagnosisReport | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -84,14 +131,14 @@ export default function DiagnosePage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error ?? 'The diagnosis failed.');
+        setError(payload.error ? text(payload.error) : copy.failed);
         setReport(null);
       } else {
         setReport(payload as DiagnosisReport);
         setHistory((payload as { history?: HistoryOutcome }).history ?? null);
       }
     } catch {
-      setError('Could not reach the diagnostic engine.');
+      setError(copy.unreachable);
       setReport(null);
     } finally {
       setRunning(false);
@@ -127,17 +174,13 @@ export default function DiagnosePage() {
 
   return (
     <AppShell
-      title="Diagnose a dApp"
-      intro={
-        <p>
-          Six read-only checks on the RPC configuration your app runs on. No private keys, no seed phrases, no
-          transactions.
-        </p>
-      }
+      title={copy.title}
+      intro={<p>{copy.intro}</p>}
     >
       <div className="mt-8 flex flex-wrap items-center gap-3">
-        <span className="text-sm font-semibold">Try it on</span>
-        {Object.entries(PRESETS).map(([key, preset]) => (
+        <span className="text-sm font-semibold">{copy.tryIt}</span>
+        {Object.keys(PRESETS).map((key) => (
+          // A preset's words live in the copy; its values are the same in every language.
           <button
             key={key}
             type="button"
@@ -145,10 +188,10 @@ export default function DiagnosePage() {
             onClick={() => runPreset(key)}
             disabled={running}
             aria-pressed={activePreset === key}
-            title={preset.hint}
+            title={copy.presets[key as keyof typeof copy.presets].hint}
             className="btn-plain min-h-11 px-4 text-sm disabled:opacity-60"
           >
-            {preset.label}
+            {copy.presets[key as keyof typeof copy.presets].label}
           </button>
         ))}
       </div>
@@ -161,32 +204,32 @@ export default function DiagnosePage() {
             void diagnose();
           }}
         >
-          <Field label="Primary RPC" value={form.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
+          <Field label={copy.fields.rpcUrl} value={form.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
           <Field
-            label="Fallback RPC (optional)"
+            label={copy.fields.fallbackRpcUrl}
             value={form.fallbackRpcUrl}
             onChange={(v) => update('fallbackRpcUrl', v)}
           />
           <Field
-            label="Expected chain ID"
+            label={copy.fields.expectedChainId}
             value={form.expectedChainId}
             onChange={(v) => update('expectedChainId', v)}
           />
           <Field
-            label="Contract address (optional)"
+            label={copy.fields.contractAddress}
             value={form.contractAddress}
             onChange={(v) => update('contractAddress', v)}
           />
           <div className="sm:col-span-2">
             <Field
-              label="Critical read (optional)"
+              label={copy.fields.criticalReadSignature}
               value={form.criticalReadSignature}
               onChange={(v) => update('criticalReadSignature', v)}
             />
           </div>
           <div className="sm:col-span-2">
             <button type="submit" disabled={running} className="btn-pen min-h-12 px-6 disabled:opacity-60">
-              {running ? 'Diagnosing…' : 'Diagnose'}
+              {running ? copy.running : copy.run}
             </button>
           </div>
         </form>
@@ -203,15 +246,15 @@ export default function DiagnosePage() {
       {report && history?.saved && (
         <div className="mt-6">
           <Notice tone="success">
-            Saved to your{' '}
+            {copy.saved[0]}{' '}
             <Link href="/history" prefetch={false} className="font-semibold underline underline-offset-4">
-              diagnosis history
+              {copy.saved[1]}
             </Link>
-            . Launching on mainnet?{' '}
+            {copy.saved[2]}{' '}
             <Link href="/launch" prefetch={false} className="font-semibold underline underline-offset-4">
-              Run Launch Check
+              {copy.saved[3]}
             </Link>
-            .
+            {copy.saved[4]}
           </Notice>
         </div>
       )}
@@ -219,9 +262,9 @@ export default function DiagnosePage() {
         <div className="mt-6">
           <Notice tone="action">
             <Link href="/history" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
-              Keep every diagnosis and check your launch with Pro
+              {copy.upsell[0]}
             </Link>
-            . Diagnosis stays free.
+            {copy.upsell[1]}
           </Notice>
         </div>
       )}

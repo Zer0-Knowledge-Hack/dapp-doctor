@@ -7,6 +7,14 @@ Burning Token · NERDCONF hackathon. Team of 3. Deadline: Sunday
 **This project is written in English** — code, comments, UI strings, commit
 messages, docs. Do not mix languages.
 
+The one exception is the **Spanish interface**, offered by the English |
+Español buttons in the header. Spanish lives only in copy dictionaries:
+`src/components/landing/content.ts`, each page's `COPY` object, and
+`src/lib/i18n/engineText.ts` for the engine's sentences. Everything else stays
+English, including the engine, the API and the MCP server. When you add or
+change a sentence the engine writes, add its Spanish to `engineText.ts` in the
+same commit: `pnpm i18n` fails on any sentence left untranslated.
+
 **This project uses pnpm.** Never run `npm` or `yarn`, and never `npx`: use
 `pnpm`, `pnpm dlx` and the scripts in `package.json`. Mixing package managers
 creates a second lockfile and a different dependency tree for whoever installs
@@ -109,10 +117,10 @@ default your agent has for adding attribution lines.
 ## 5. Before merging
 
 ```bash
-pnpm verify   # typecheck, build, ssrf, billing, intake, mcp, launch, heartbeat, smoke — in that order
+pnpm verify   # typecheck, build, ssrf, billing, intake, mcp, launch, heartbeat, i18n, smoke — in that order
 ```
 
-All nine stages must pass. Run `pnpm lint` and `pnpm audit --prod` too before
+All ten stages must pass. Run `pnpm lint` and `pnpm audit --prod` too before
 publishing anything. The smoke test hits real public RPCs, so it can fail
 because a provider is down rather than because of your code — if it fails,
 look at which scenario before assuming you broke something.

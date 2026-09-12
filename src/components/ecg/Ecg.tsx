@@ -1,4 +1,8 @@
+'use client';
+
+import { useLang } from '@/components/i18n/LanguageProvider';
 import type { OverallStatus } from '@/lib/diagnostics/types';
+import type { Lang } from '@/lib/i18n/lang';
 
 /**
  * An ECG strip whose rhythm is the diagnosis.
@@ -66,12 +70,21 @@ function pathFor(rhythm: Rhythm): string {
   return points.join(' ');
 }
 
-const LABEL: Record<Rhythm, string> = {
-  idle: 'Waiting for a diagnosis',
-  READY: 'Steady rhythm: all checks passed',
-  AT_RISK: 'Irregular rhythm: some checks need attention',
-  BLOCKED: 'Flatline: a critical check failed',
-  NOT_TESTED: 'No signal: nothing could be checked',
+const LABELS: Record<Lang, Record<Rhythm, string>> = {
+  en: {
+    idle: 'Waiting for a diagnosis',
+    READY: 'Steady rhythm: all checks passed',
+    AT_RISK: 'Irregular rhythm: some checks need attention',
+    BLOCKED: 'Flatline: a critical check failed',
+    NOT_TESTED: 'No signal: nothing could be checked',
+  },
+  es: {
+    idle: 'Esperando un diagnóstico',
+    READY: 'Ritmo parejo: pasaron todos los chequeos',
+    AT_RISK: 'Ritmo irregular: algunos chequeos necesitan atención',
+    BLOCKED: 'Línea plana: falló un chequeo crítico',
+    NOT_TESTED: 'Sin señal: no se pudo revisar nada',
+  },
 };
 
 export function Ecg({ rhythm, className = '', motion }: {
@@ -79,6 +92,7 @@ export function Ecg({ rhythm, className = '', motion }: {
   className?: string;
   motion?: { pauseLabel: string };
 }) {
+  const LABEL = LABELS[useLang()];
   // A repeated READY strip joins at its baseline with exactly six equal beats.
   // Failed or untested states must never acquire a healthy looping heartbeat.
   if (motion && rhythm === 'READY') {

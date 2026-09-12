@@ -7,10 +7,12 @@ import { Field } from '@/components/app/Field';
 import { Notice } from '@/components/app/Notice';
 import { OutcomeLabel } from '@/components/app/OutcomeLabel';
 import { Ecg } from '@/components/ecg/Ecg';
-import { landing } from '@/components/landing/content';
+import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
+import { useLanding } from '@/components/landing/useLanding';
 import { Sheet } from '@/components/ui/Sheet';
 import { Stamp } from '@/components/ui/Stamp';
 import type { ChangeKind, Comparison } from '@/lib/diagnostics/compare';
+import type { Lang } from '@/lib/i18n/lang';
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
@@ -40,15 +42,47 @@ const AFTER: FormState = {
   criticalReadSignature: 'symbol() returns (string)',
 };
 
-/** Words, not colour, say what changed; a regression is the one to read first. */
-const CHANGE_TEXT: Record<ChangeKind, string> = {
-  FIXED: 'fixed',
-  REGRESSED: 'broke',
-  CHANGED: 'changed',
-  UNCHANGED: 'unchanged',
-};
+const COPY = {
+  en: {
+    title: 'Compare two setups',
+    intro: 'Runs the same diagnosis on the broken configuration and the fixed one, at the same moment. A single report proves nothing; the difference between the two is what proves the fix.',
+    before: 'Before',
+    after: 'After',
+    beforeSubtitle: 'The configuration with the failure',
+    afterSubtitle: 'The fixed configuration',
+    fields: { rpcUrl: 'Primary RPC', fallbackRpcUrl: 'Fallback RPC', expectedChainId: 'Expected chain ID', contractAddress: 'Contract address', criticalReadSignature: 'Critical read' },
+    run: 'Compare',
+    running: 'Comparing…',
+    failed: 'The comparison failed.',
+    unreachable: 'Could not reach the diagnostic engine.',
+    tally: (fixed: number, regressed: number) => `${fixed} fixed, ${regressed} broke.`,
+    columns: { check: 'Check', change: 'Change' },
+    // Words, not colour, say what changed; a regression is the one to read first.
+    change: { FIXED: 'fixed', REGRESSED: 'broke', CHANGED: 'changed', UNCHANGED: 'unchanged' } as Record<ChangeKind, string>,
+  },
+  es: {
+    title: 'Comparar dos configuraciones',
+    intro: 'Corre el mismo diagnóstico sobre la configuración rota y la arreglada, en el mismo momento. Un reporte solo no prueba nada; lo que prueba el arreglo es la diferencia entre los dos.',
+    before: 'Antes',
+    after: 'Después',
+    beforeSubtitle: 'La configuración con la falla',
+    afterSubtitle: 'La configuración arreglada',
+    fields: { rpcUrl: 'RPC principal', fallbackRpcUrl: 'RPC de respaldo', expectedChainId: 'Chain ID esperado', contractAddress: 'Dirección del contrato', criticalReadSignature: 'Lectura crítica' },
+    run: 'Comparar',
+    running: 'Comparando…',
+    failed: 'La comparación falló.',
+    unreachable: 'No se pudo llegar al motor de diagnóstico.',
+    tally: (fixed: number, regressed: number) => `${fixed} arreglado(s), ${regressed} roto(s).`,
+    columns: { check: 'Chequeo', change: 'Cambio' },
+    change: { FIXED: 'arreglado', REGRESSED: 'se rompió', CHANGED: 'cambió', UNCHANGED: 'sin cambios' } as Record<ChangeKind, string>,
+  },
+} satisfies Record<Lang, unknown>;
+
+type Copy = (typeof COPY)[Lang];
 
 export default function ComparePage() {
+  const copy = COPY[useLang()];
+  const text = useEngineText();
   const [before, setBefore] = useState<FormState>(BEFORE);
   const [after, setAfter] = useState<FormState>(AFTER);
   const [comparison, setComparison] = useState<Comparison | null>(null);
@@ -71,13 +105,13 @@ export default function ComparePage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error ?? 'The comparison failed.');
+        setError(payload.error ? text(payload.error) : copy.failed);
         setComparison(null);
       } else {
         setComparison(payload as Comparison);
       }
     } catch {
-      setError('Could not reach the diagnostic engine.');
+      setError(copy.unreachable);
       setComparison(null);
     } finally {
       setRunning(false);
@@ -86,22 +120,17 @@ export default function ComparePage() {
 
   return (
     <AppShell
-      title="Compare two setups"
-      intro={
-        <p>
-          Runs the same diagnosis on the broken configuration and the fixed one, at the same moment. A single
-          report proves nothing; the difference between the two is what proves the fix.
-        </p>
-      }
+      title={copy.title}
+      intro={<p>{copy.intro}</p>}
     >
       <div className="mt-10 grid gap-8 md:grid-cols-2">
-        <Panel title="Before" subtitle="The configuration with the failure" values={before} onChange={setBefore} />
-        <Panel title="After" subtitle="The fixed configuration" values={after} onChange={setAfter} />
+        <Panel copy={copy} title={copy.before} subtitle={copy.beforeSubtitle} values={before} onChange={setBefore} />
+        <Panel copy={copy} title={copy.after} subtitle={copy.afterSubtitle} values={after} onChange={setAfter} />
       </div>
 
       <div className="mt-8">
         <button type="button" onClick={compare} disabled={running} className="btn-pen min-h-12 px-6 disabled:opacity-60">
-          {running ? 'Comparing…' : 'Compare'}
+          {running ? copy.running : copy.run}
         </button>
       </div>
 
@@ -111,12 +140,13 @@ export default function ComparePage() {
         </div>
       )}
 
-      {comparison && <Result comparison={comparison} />}
+      {comparison && <Result comparison={comparison} copy={copy} />}
     </AppShell>
   );
 }
 
-function Panel({ title, subtitle, values, onChange }: {
+function Panel({ copy, title, subtitle, values, onChange }: {
+  copy: Copy;
   title: string;
   subtitle: string;
   values: FormState;
@@ -131,12 +161,12 @@ function Panel({ title, subtitle, values, onChange }: {
       <h2 className="font-display text-3xl leading-none font-black">{title}</h2>
       <p className="mt-2 mb-6 text-sm text-muted">{subtitle}</p>
       <div className="space-y-4">
-        <Field label="Primary RPC" value={values.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
-        <Field label="Fallback RPC" value={values.fallbackRpcUrl} onChange={(v) => update('fallbackRpcUrl', v)} />
-        <Field label="Expected chain ID" value={values.expectedChainId} onChange={(v) => update('expectedChainId', v)} />
-        <Field label="Contract address" value={values.contractAddress} onChange={(v) => update('contractAddress', v)} />
+        <Field label={copy.fields.rpcUrl} value={values.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
+        <Field label={copy.fields.fallbackRpcUrl} value={values.fallbackRpcUrl} onChange={(v) => update('fallbackRpcUrl', v)} />
+        <Field label={copy.fields.expectedChainId} value={values.expectedChainId} onChange={(v) => update('expectedChainId', v)} />
+        <Field label={copy.fields.contractAddress} value={values.contractAddress} onChange={(v) => update('contractAddress', v)} />
         <Field
-          label="Critical read"
+          label={copy.fields.criticalReadSignature}
           value={values.criticalReadSignature}
           onChange={(v) => update('criticalReadSignature', v)}
         />
@@ -145,7 +175,9 @@ function Panel({ title, subtitle, values, onChange }: {
   );
 }
 
-function Result({ comparison }: { comparison: Comparison }) {
+function Result({ comparison, copy }: { comparison: Comparison; copy: Copy }) {
+  const text = useEngineText();
+  const landing = useLanding();
   return (
     <section aria-labelledby="comparison-result" className="mt-12 sm:mt-16">
       <Sheet className="px-3 py-6 sm:px-8 sm:py-8 lg:px-10">
@@ -154,20 +186,20 @@ function Result({ comparison }: { comparison: Comparison }) {
           tabIndex={-1}
           className="max-w-[40ch] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.02] font-black text-balance outline-none"
         >
-          {comparison.verdict}
+          {text(comparison.verdict)}
         </h2>
         <p className="mt-3 text-sm text-muted">
-          {comparison.fixed} fixed, {comparison.regressed} broke.
+          {copy.tally(comparison.fixed, comparison.regressed)}
         </p>
 
         <div className="mt-7 grid grid-cols-2 divide-x divide-ink">
           <div className="min-w-0 pr-3 sm:pr-7">
-            <p className="mb-5 text-sm font-semibold">Before</p>
+            <p className="mb-5 text-sm font-semibold">{copy.before}</p>
             <Stamp status={comparison.statusBefore} />
             <Ecg rhythm={comparison.statusBefore} className="mt-5 h-20 w-full text-ink sm:h-24" />
           </div>
           <div className="min-w-0 pl-4 sm:pl-8">
-            <p className="mb-5 text-sm font-semibold">After</p>
+            <p className="mb-5 text-sm font-semibold">{copy.after}</p>
             <Stamp status={comparison.statusAfter} />
             <Ecg
               rhythm={comparison.statusAfter}
@@ -181,25 +213,25 @@ function Result({ comparison }: { comparison: Comparison }) {
           <table className="w-full min-w-[34rem] border-collapse text-left text-sm leading-snug sm:text-base">
             <thead className="border-y-2 border-ink">
               <tr>
-                <th scope="col" className="py-3 pr-3 font-semibold">Check</th>
-                <th scope="col" className="py-3 pr-3 font-semibold">Before</th>
-                <th scope="col" className="py-3 pr-3 font-semibold">After</th>
-                <th scope="col" className="py-3 text-right font-semibold">Change</th>
+                <th scope="col" className="py-3 pr-3 font-semibold">{copy.columns.check}</th>
+                <th scope="col" className="py-3 pr-3 font-semibold">{copy.before}</th>
+                <th scope="col" className="py-3 pr-3 font-semibold">{copy.after}</th>
+                <th scope="col" className="py-3 text-right font-semibold">{copy.columns.change}</th>
               </tr>
             </thead>
             <tbody>
               {comparison.deltas.map((delta) => (
                 <tr key={delta.id} className="border-b border-ink align-top">
                   <th scope="row" className="py-4 pr-3 font-medium">
-                    {delta.title}
-                    <span className="mt-1 block max-w-[48ch] text-sm font-normal text-muted">{delta.afterSummary}</span>
+                    {text(delta.title)}
+                    <span className="mt-1 block max-w-[48ch] text-sm font-normal text-muted">{text(delta.afterSummary)}</span>
                   </th>
                   <td className="py-4 pr-3"><OutcomeLabel outcome={delta.before} /></td>
                   <td className="py-4 pr-3"><OutcomeLabel outcome={delta.after} /></td>
                   <td className="py-4 text-right">
                     {/* Black text with a red bar, like every status here: red text on white is too faint. */}
                     <span className={delta.change === 'REGRESSED' ? 'border-l-[3px] border-triage-red pl-1.5 font-bold' : ''}>
-                      {CHANGE_TEXT[delta.change]}
+                      {copy.change[delta.change]}
                     </span>
                   </td>
                 </tr>
