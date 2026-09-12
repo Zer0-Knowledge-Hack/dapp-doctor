@@ -1,3 +1,4 @@
+import { accountUserId, chooseUserId, isAccountUserId } from '../src/lib/auth/identity';
 import { isEntitlementActive, isValidAppUserId } from '../src/lib/billing/entitlement';
 
 /**
@@ -40,6 +41,22 @@ check('query injection refused', isValidAppUserId('abcdefghijklmnop?x=1'), false
 check('too short refused', isValidAppUserId('abc'), false);
 check('non-string refused', isValidAppUserId(12345), false);
 check('empty refused', isValidAppUserId(''), false);
+
+console.log('\n--- accounts: whose purchase and history a request may reach ---');
+const account = accountUserId('109876543210987654321');
+const anonymous = '3f1c9a2e-7b4d-4e8a-9c21-5d6f0a1b2c3d';
+check('an account id is a valid RevenueCat user id', isValidAppUserId(account), true);
+check('the same Google account always gets the same id', accountUserId('109876543210987654321') === account, true);
+check('another Google account gets another id', accountUserId('109876543210987654322') === account, false);
+check('the id does not contain the Google subject', account.includes('109876543210987654321'), false);
+check('account ids are recognisable', isAccountUserId(account) && !isAccountUserId(anonymous), true);
+check('a signed-in session wins over what the browser sends',
+  chooseUserId({ sessionUserId: account, claimedUserId: anonymous }) === account, true);
+check('without a session, an anonymous id is accepted',
+  chooseUserId({ sessionUserId: null, claimedUserId: anonymous }) === anonymous, true);
+check('without a session, an account id is refused: knowing it is not enough',
+  chooseUserId({ sessionUserId: null, claimedUserId: account }) === null, true);
+check('a malformed id is refused', chooseUserId({ sessionUserId: undefined, claimedUserId: '../admin' }) === null, true);
 
 console.log(`\n=== ${failures === 0 ? 'all billing checks passed' : `${failures} billing check(s) FAILED`} ===`);
 process.exit(failures > 0 ? 1 : 0);

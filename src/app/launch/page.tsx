@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { AccountNotice } from '@/components/account/AccountNotice';
 import { AppShell } from '@/components/app/AppShell';
 import { Field } from '@/components/app/Field';
 import { LaunchReport } from '@/components/app/LaunchReport';
@@ -264,6 +265,9 @@ export default function LaunchPage() {
           <p className="mt-5 max-w-[65ch]">
             {access.reason === 'expired' ? text(access.message) : copy.lockedBody}
           </p>
+          <div className="mt-6">
+            <AccountNotice />
+          </div>
           <div className="mt-7">
             <ButtonLink href="/history" variant="pen">
               {access.reason === 'expired' ? copy.renew : copy.seePlans}

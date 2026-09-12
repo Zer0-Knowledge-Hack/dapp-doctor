@@ -69,6 +69,9 @@ comment in `engine.ts`.
   must not look like it leaks.
 - Anything that identifies a user to a paid endpoint travels in a header,
   never a URL. URLs end up in logs, browser history and Referer headers.
+- A user id starting with `g_` belongs to a Google account. Accept it only
+  from that account's session (`requestUserId` in `src/lib/auth/session.ts`),
+  never from a header or a body.
 
 ## 3. The SSRF guard
 

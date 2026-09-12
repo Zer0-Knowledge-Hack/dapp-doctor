@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { runDiagnosis } from '@/lib/diagnostics/engine';
 import { parseTarget } from '@/lib/diagnostics/parseTarget';
-import { checkEntitlement, isValidAppUserId } from '@/lib/billing/entitlement';
+import { requestUserId } from '@/lib/auth/session';
+import { checkEntitlement } from '@/lib/billing/entitlement';
 import { saveReport } from '@/lib/history/store';
 
 export const runtime = 'nodejs';
@@ -26,15 +27,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const userId = (body as { userId?: unknown }).userId;
-  const wantsHistory = isValidAppUserId(userId);
+  // A signed-in session wins; otherwise the anonymous id the browser sent, if any.
+  const userId = await requestUserId((body as { userId?: unknown }).userId);
 
   try {
     // The entitlement lookup runs alongside the diagnosis rather than after
     // it, so a paying user does not wait for RevenueCat on top of six checks.
     const [report, entitlement] = await Promise.all([
       runDiagnosis(parsed.target),
-      wantsHistory ? checkEntitlement(userId) : Promise.resolve(null),
+      userId ? checkEntitlement(userId) : Promise.resolve(null),
     ]);
 
     let history: HistoryOutcome | undefined;

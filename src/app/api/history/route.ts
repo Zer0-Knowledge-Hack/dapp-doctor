@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { checkEntitlement, isBillingConfigured, isValidAppUserId } from '@/lib/billing/entitlement';
+import { requestUserId } from '@/lib/auth/session';
+import { checkEntitlement, isBillingConfigured } from '@/lib/billing/entitlement';
 import { USER_ID_HEADER } from '@/lib/billing/constants';
 import { isHistoryConfigured, listReports } from '@/lib/history/store';
 
@@ -24,9 +25,10 @@ export async function GET(request: Request) {
   // The user id works as a credential for reading this history, so it travels
   // in a header, never the URL: URLs end up in server logs, browser history
   // and Referer headers sent to other sites.
-  const userId = request.headers.get(USER_ID_HEADER);
+  // A signed-in session wins; otherwise the anonymous id this browser keeps.
+  const userId = await requestUserId(request.headers.get(USER_ID_HEADER));
 
-  if (!isValidAppUserId(userId)) {
+  if (!userId) {
     return NextResponse.json({ error: 'userId is missing or malformed.' }, { status: 400 });
   }
 
