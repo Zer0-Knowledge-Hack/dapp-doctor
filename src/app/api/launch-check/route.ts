@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { USER_ID_HEADER } from '@/lib/billing/constants';
-import { checkEntitlement, isBillingConfigured, isValidAppUserId } from '@/lib/billing/entitlement';
+import { requestUserId } from '@/lib/auth/session';
+import { checkEntitlement, isBillingConfigured } from '@/lib/billing/entitlement';
 import { parseTarget } from '@/lib/diagnostics/parseTarget';
 import { runLaunchCheck } from '@/lib/launch/run';
 
@@ -25,8 +26,9 @@ const REFUSAL: Record<string, string> = {
  */
 export async function POST(request: Request) {
   // The user id works as a credential here, so it travels in a header, never the URL.
-  const userId = request.headers.get(USER_ID_HEADER);
-  if (!isValidAppUserId(userId)) {
+  // A signed-in session wins; otherwise the anonymous id this browser keeps.
+  const userId = await requestUserId(request.headers.get(USER_ID_HEADER));
+  if (!userId) {
     return NextResponse.json({ error: 'userId is missing or malformed.' }, { status: 400 });
   }
 

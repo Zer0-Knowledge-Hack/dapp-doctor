@@ -23,6 +23,7 @@ const en = {
   header: {
     availability: 'LIVE',
     name: 'DApp Doctor',
+    homeLabel: 'DApp Doctor, home page',
     navigationLabel: 'Main navigation',
     skip: 'Skip to content',
     links: [
@@ -170,6 +171,7 @@ const es: LandingCopy = {
   header: {
     availability: 'LIVE',
     name: 'DApp Doctor',
+    homeLabel: 'DApp Doctor, página de inicio',
     navigationLabel: 'Navegación principal',
     skip: 'Saltar al contenido',
     links: [
