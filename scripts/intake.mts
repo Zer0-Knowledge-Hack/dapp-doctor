@@ -1,3 +1,4 @@
+import { parseConfigFile } from '../src/lib/forms/parseConfigFile';
 import { extractFromText } from '../src/lib/intake/extract';
 
 /**
@@ -92,6 +93,20 @@ console.log('\n--- traps ---');
 {
   const r = extractFromText('RPC_URL=https://my-private-node.example.com');
   check('unknown host → chain left empty, not guessed', r.chainId, null);
+}
+
+console.log('\n--- upload button reads the same .env ---');
+{
+  const fields = parseConfigFile(`
+NEXT_PUBLIC_RPC_URL=https://mainnet.base.org
+NEXT_PUBLIC_CHAIN_ID=8453
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+CRITICAL_READ=symbol() returns (string)
+`);
+  check('upload fills the RPC', fields.rpcUrl, 'https://mainnet.base.org');
+  check('upload fills the chain', fields.expectedChainId, '8453');
+  check('upload fills the contract', fields.contractAddress, '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913');
+  check('upload fills the critical read', fields.criticalReadSignature, 'symbol() returns (string)');
 }
 
 console.log(`\n=== ${failures === 0 ? 'all intake checks passed' : `${failures} intake check(s) FAILED`} ===`);

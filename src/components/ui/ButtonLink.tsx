@@ -9,7 +9,7 @@ export function ButtonLink({ href, variant, children }: {
     <Link
       href={href}
       prefetch={false}
-      className={`${variant === 'pen' ? 'btn-pen' : 'btn-plain'} inline-flex min-h-12 max-w-full items-center justify-center px-5 py-3 text-center text-base leading-snug sm:px-6`}
+      className={`${variant === 'pen' ? 'btn-pen' : 'btn-plain'} inline-flex min-h-11 max-w-full items-center justify-center px-4 py-2 text-center text-sm leading-snug sm:px-5`}
     >
       {children}
     </Link>

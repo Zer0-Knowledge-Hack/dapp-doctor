@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import { redactRpcUrl } from '../diagnostics/rpc';
+import { redactRpcUrl } from '../diagnostics/redact';
 import type { DiagnosisReport } from '../diagnostics/types';
 
 /**

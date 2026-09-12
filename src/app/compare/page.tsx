@@ -1,17 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AppShell } from '@/components/app/AppShell';
 import { revealResult } from '@/components/app/revealResult';
+import { ConfigUpload } from '@/components/app/ConfigUpload';
 import { Field } from '@/components/app/Field';
 import { Notice } from '@/components/app/Notice';
 import { OutcomeLabel } from '@/components/app/OutcomeLabel';
 import { Ecg } from '@/components/ecg/Ecg';
 import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import { useLanding } from '@/components/landing/useLanding';
+import { Icon } from '@/components/ui/Icon';
 import { Sheet } from '@/components/ui/Sheet';
 import { Stamp } from '@/components/ui/Stamp';
 import type { ChangeKind, Comparison } from '@/lib/diagnostics/compare';
+import { hasFieldErrors, validateTargetFields, type FieldErrors } from '@/lib/forms/targetFields';
+import { saveLocalDiagnosis } from '@/lib/history/local';
 import type { Lang } from '@/lib/i18n/lang';
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -52,9 +57,22 @@ const COPY = {
     afterSubtitle: 'The fixed configuration',
     fields: { rpcUrl: 'Primary RPC', fallbackRpcUrl: 'Fallback RPC', expectedChainId: 'Expected chain ID', contractAddress: 'Contract address', criticalReadSignature: 'Critical read' },
     run: 'Compare',
-    running: 'Comparing…',
+    running: 'Comparing both configurations…',
     failed: 'The comparison failed.',
-    unreachable: 'Could not reach the diagnostic engine.',
+    unreachable: 'Could not reach the diagnostic engine. Check the connection and retry.',
+    learnMore: 'Learn more',
+    dashboard: 'View dashboard',
+    upload: 'Upload config',
+    uploadEmpty: 'No RPC fields found in that file.',
+    uploadError: 'Could not read that file.',
+    uploadFilled: 'Fields filled from the file.',
+    validation: {
+      rpcUrl: 'Enter a valid RPC URL.',
+      chainId: 'Chain ID must be a positive integer.',
+      contract: 'Enter a valid EVM contract address.',
+      fallback: 'Fallback RPC must be a valid http(s) URL.',
+      signature: 'Use a zero-argument read, e.g. symbol() returns (string).',
+    },
     tally: (fixed: number, regressed: number) => `${fixed} fixed, ${regressed} broke.`,
     columns: { check: 'Check', change: 'Change' },
     // Words, not colour, say what changed; a regression is the one to read first.
@@ -69,9 +87,22 @@ const COPY = {
     afterSubtitle: 'La configuración arreglada',
     fields: { rpcUrl: 'RPC principal', fallbackRpcUrl: 'RPC de respaldo', expectedChainId: 'Chain ID esperado', contractAddress: 'Dirección del contrato', criticalReadSignature: 'Lectura crítica' },
     run: 'Comparar',
-    running: 'Comparando…',
+    running: 'Comparando las dos configuraciones…',
     failed: 'La comparación falló.',
-    unreachable: 'No se pudo llegar al motor de diagnóstico.',
+    unreachable: 'No se pudo llegar al motor de diagnóstico. Revisá la conexión y reintentá.',
+    learnMore: 'Saber más',
+    dashboard: 'Ver el panel',
+    upload: 'Subir config',
+    uploadEmpty: 'Ese archivo no tiene campos de RPC.',
+    uploadError: 'No se pudo leer ese archivo.',
+    uploadFilled: 'Campos completados desde el archivo.',
+    validation: {
+      rpcUrl: 'Ingresá una URL de RPC válida.',
+      chainId: 'El chain ID tiene que ser un entero positivo.',
+      contract: 'Ingresá una dirección EVM válida.',
+      fallback: 'El RPC de respaldo tiene que ser una URL http(s) válida.',
+      signature: 'Usá una lectura de cero argumentos, p. ej. symbol() returns (string).',
+    },
     tally: (fixed: number, regressed: number) => `${fixed} arreglado(s), ${regressed} roto(s).`,
     columns: { check: 'Chequeo', change: 'Cambio' },
     change: { FIXED: 'arreglado', REGRESSED: 'se rompió', CHANGED: 'cambió', UNCHANGED: 'sin cambios' } as Record<ChangeKind, string>,
@@ -88,6 +119,10 @@ export default function ComparePage() {
   const [comparison, setComparison] = useState<Comparison | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const beforeErrors = validateTargetFields(before, copy.validation);
+  const afterErrors = validateTargetFields(after, copy.validation);
+  const invalid = hasFieldErrors(beforeErrors) || hasFieldErrors(afterErrors);
 
   // The result arrives below both panels: bring it into view.
   useEffect(() => {
@@ -95,6 +130,10 @@ export default function ComparePage() {
   }, [comparison]);
 
   async function compare() {
+    if (invalid) {
+      setAttempted(true);
+      return;
+    }
     setRunning(true);
     setError(null);
     try {
@@ -108,7 +147,10 @@ export default function ComparePage() {
         setError(payload.error ? text(payload.error) : copy.failed);
         setComparison(null);
       } else {
-        setComparison(payload as Comparison);
+        const next = payload as Comparison;
+        setComparison(next);
+        saveLocalDiagnosis(next.before, 'compare');
+        saveLocalDiagnosis(next.after, 'compare');
       }
     } catch {
       setError(copy.unreachable);
@@ -123,13 +165,19 @@ export default function ComparePage() {
       title={copy.title}
       intro={<p>{copy.intro}</p>}
     >
-      <div className="mt-10 grid gap-8 md:grid-cols-2">
-        <Panel copy={copy} title={copy.before} subtitle={copy.beforeSubtitle} values={before} onChange={setBefore} />
-        <Panel copy={copy} title={copy.after} subtitle={copy.afterSubtitle} values={after} onChange={setAfter} />
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <Panel copy={copy} title={copy.before} subtitle={copy.beforeSubtitle} values={before} onChange={setBefore} errors={attempted ? beforeErrors : {}} />
+        <Panel copy={copy} title={copy.after} subtitle={copy.afterSubtitle} values={after} onChange={setAfter} errors={attempted ? afterErrors : {}} />
       </div>
 
       <div className="mt-8">
-        <button type="button" onClick={compare} disabled={running} className="btn-pen min-h-12 px-6 disabled:opacity-60">
+        <button
+          type="button"
+          onClick={compare}
+          disabled={running || (attempted && invalid)}
+          className="btn-pen inline-flex min-h-12 items-center gap-2 px-6 disabled:opacity-60"
+        >
+          {running && <Icon name="spinner" />}
           {running ? copy.running : copy.run}
         </button>
       </div>
@@ -141,35 +189,61 @@ export default function ComparePage() {
       )}
 
       {comparison && <Result comparison={comparison} copy={copy} />}
+      {comparison && (
+        <div className="mt-6">
+          <Link href="/dashboard" prefetch={false} className="btn-plain inline-flex min-h-12 items-center px-5">
+            {copy.dashboard}
+          </Link>
+        </div>
+      )}
     </AppShell>
   );
 }
 
-function Panel({ copy, title, subtitle, values, onChange }: {
+function Panel({ copy, title, subtitle, values, onChange, errors }: {
   copy: Copy;
   title: string;
   subtitle: string;
   values: FormState;
   onChange: (values: FormState) => void;
+  errors: FieldErrors;
 }) {
   function update(field: keyof FormState, value: string) {
     onChange({ ...values, [field]: value });
   }
 
   return (
-    <Sheet className="px-5 py-6 sm:px-7 sm:py-7">
-      <h2 className="font-display text-3xl leading-none font-black">{title}</h2>
-      <p className="mt-2 mb-6 text-sm text-muted">{subtitle}</p>
-      <div className="space-y-4">
-        <Field label={copy.fields.rpcUrl} value={values.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
-        <Field label={copy.fields.fallbackRpcUrl} value={values.fallbackRpcUrl} onChange={(v) => update('fallbackRpcUrl', v)} />
-        <Field label={copy.fields.expectedChainId} value={values.expectedChainId} onChange={(v) => update('expectedChainId', v)} />
-        <Field label={copy.fields.contractAddress} value={values.contractAddress} onChange={(v) => update('contractAddress', v)} />
+    <Sheet className="px-4 py-5 sm:px-6 sm:py-6">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl leading-tight font-black">{title}</h2>
+          <p className="mt-1 text-sm text-muted">{subtitle}</p>
+        </div>
+        <ConfigUpload
+          onParsed={(fields) => onChange({ ...values, ...fields })}
+          copy={{
+            upload: copy.upload,
+            empty: copy.uploadEmpty,
+            error: copy.uploadError,
+            filled: copy.uploadFilled,
+          }}
+        />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={copy.fields.rpcUrl} value={values.rpcUrl} onChange={(v) => update('rpcUrl', v)} error={errors.rpcUrl} learnMoreHref="/help#rpc-url" learnMoreLabel={copy.learnMore} />
+        <Field label={copy.fields.fallbackRpcUrl} value={values.fallbackRpcUrl} onChange={(v) => update('fallbackRpcUrl', v)} error={errors.fallbackRpcUrl} learnMoreHref="/help#fallback" learnMoreLabel={copy.learnMore} />
+        <Field label={copy.fields.expectedChainId} value={values.expectedChainId} onChange={(v) => update('expectedChainId', v)} error={errors.expectedChainId} learnMoreHref="/help#chain-id" learnMoreLabel={copy.learnMore} />
+        <Field label={copy.fields.contractAddress} value={values.contractAddress} onChange={(v) => update('contractAddress', v)} error={errors.contractAddress} learnMoreHref="/help#contract" learnMoreLabel={copy.learnMore} />
+        <div className="sm:col-span-2">
         <Field
           label={copy.fields.criticalReadSignature}
           value={values.criticalReadSignature}
           onChange={(v) => update('criticalReadSignature', v)}
+          error={errors.criticalReadSignature}
+          learnMoreHref="/help#critical-read"
+          learnMoreLabel={copy.learnMore}
         />
+        </div>
       </div>
     </Sheet>
   );
@@ -184,7 +258,7 @@ function Result({ comparison, copy }: { comparison: Comparison; copy: Copy }) {
         <h2
           id="comparison-result"
           tabIndex={-1}
-          className="max-w-[40ch] font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.02] font-black text-balance outline-none"
+          className="max-w-[40ch] font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black text-balance outline-none"
         >
           {text(comparison.verdict)}
         </h2>
