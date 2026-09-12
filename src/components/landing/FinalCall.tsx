@@ -7,9 +7,9 @@ export function FinalCall() {
   const landing = useLanding();
   const content = landing.finalCall;
   return (
-    <section aria-labelledby="final-heading" className="border-y-[3px] border-ink py-12 sm:py-16">
-      <h2 id="final-heading" className="max-w-[22ch] font-display text-[clamp(2.75rem,6vw,4.75rem)] leading-[0.95] font-black text-balance">{content.headline}</h2>
-      <div className="mt-8"><ButtonLink href={content.primary.href} variant="pen">{content.primary.label}</ButtonLink></div>
+    <section aria-labelledby="final-heading" className="border-t-2 border-ink pt-7 pb-4 sm:pt-8">
+      <h2 id="final-heading" className="max-w-[26ch] font-display text-[clamp(1.5rem,3.4vw,2rem)] leading-[1.1] font-black text-balance">{content.headline}</h2>
+      <div className="mt-5"><ButtonLink href={content.primary.href} variant="pen">{content.primary.label}</ButtonLink></div>
     </section>
   );
 }

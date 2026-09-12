@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { runDiagnosis } from '@/lib/diagnostics/engine';
 import { compareReports } from '@/lib/diagnostics/compare';
 import { parseTarget } from '@/lib/diagnostics/parseTarget';
+import { recordDiagnosisEvent } from '@/lib/dashboard/store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,14 @@ export async function POST(request: Request) {
       runDiagnosis(parsedBefore.target),
       runDiagnosis(parsedAfter.target),
     ]);
+    try {
+      await Promise.all([
+        recordDiagnosisEvent(before, 'compare'),
+        recordDiagnosisEvent(after, 'compare'),
+      ]);
+    } catch {
+      /* comparison is the product */
+    }
     return NextResponse.json(compareReports(before, after), {
       headers: { 'cache-control': 'no-store' },
     });

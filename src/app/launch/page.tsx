@@ -13,6 +13,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Sheet } from '@/components/ui/Sheet';
 import { getOrCreateUserId, getProStatus, isBillingEnabled } from '@/lib/billing/client';
 import { USER_ID_HEADER } from '@/lib/billing/constants';
+import { hasFieldErrors, validateTargetFields } from '@/lib/forms/targetFields';
 import type { Lang } from '@/lib/i18n/lang';
 import type { LaunchReport as LaunchReportData } from '@/lib/launch/run';
 
@@ -40,9 +41,17 @@ const COPY = {
     },
     fields: { rpcUrl: 'Primary RPC', fallbackRpcUrl: 'Fallback RPC', expectedChainId: 'Chain ID you launch on', contractAddress: 'Contract address', criticalReadSignature: 'Critical read' },
     run: 'Run Launch Check',
-    running: 'Checking…',
+    running: 'Running launch checks…',
     failed: 'The Launch Check failed.',
-    unreachable: 'Could not reach the diagnostic engine.',
+    unreachable: 'Could not reach the diagnostic engine. Check the connection and retry.',
+    learnMore: 'Learn more',
+    validation: {
+      rpcUrl: 'Enter a valid RPC URL.',
+      chainId: 'Chain ID must be a positive integer.',
+      contract: 'Enter a valid EVM contract address.',
+      fallback: 'Fallback RPC must be a valid http(s) URL.',
+      signature: 'Use a zero-argument read, e.g. symbol() returns (string).',
+    },
     expiredHeading: 'Your Pro access has expired.',
     lockedHeading: 'Launch Check is part of Pro.',
     lockedBody: 'Pro runs the six checks at launch strictness and adds the rules a production configuration has to meet. It also keeps every diagnosis you run. Diagnosis and comparison stay free.',
@@ -61,9 +70,17 @@ const COPY = {
     },
     fields: { rpcUrl: 'RPC principal', fallbackRpcUrl: 'RPC de respaldo', expectedChainId: 'Chain ID donde lanzas', contractAddress: 'Dirección del contrato', criticalReadSignature: 'Lectura crítica' },
     run: 'Correr Launch Check',
-    running: 'Revisando…',
+    running: 'Corriendo los chequeos de lanzamiento…',
     failed: 'Launch Check falló.',
-    unreachable: 'No se pudo llegar al motor de diagnóstico.',
+    unreachable: 'No se pudo llegar al motor de diagnóstico. Revisá la conexión y reintentá.',
+    learnMore: 'Saber más',
+    validation: {
+      rpcUrl: 'Ingresá una URL de RPC válida.',
+      chainId: 'El chain ID tiene que ser un entero positivo.',
+      contract: 'Ingresá una dirección EVM válida.',
+      fallback: 'El RPC de respaldo tiene que ser una URL http(s) válida.',
+      signature: 'Usá una lectura de cero argumentos, p. ej. symbol() returns (string).',
+    },
     expiredHeading: 'Tu acceso Pro venció.',
     lockedHeading: 'Launch Check es parte de Pro.',
     lockedBody: 'Pro corre los seis chequeos con la exigencia de un lanzamiento y agrega las reglas que tiene que cumplir una configuración de producción. También guarda cada diagnóstico que corres. El diagnóstico y la comparación siguen gratis.',
@@ -110,6 +127,9 @@ export default function LaunchPage() {
   const [report, setReport] = useState<LaunchReportData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const fieldErrors = validateTargetFields(form, copy.validation);
+  const invalid = hasFieldErrors(fieldErrors);
 
   // Display only: the browser's word on Pro decides what is shown first, and
   // the server's own check decides what is served.
@@ -143,6 +163,11 @@ export default function LaunchPage() {
 
   /** Takes the values explicitly so a preset can run the moment it is chosen. */
   async function runCheck(values: FormState = form) {
+    if (hasFieldErrors(validateTargetFields(values, copy.validation))) {
+      setAttempted(true);
+      setForm(values);
+      return;
+    }
     setRunning(true);
     setError(null);
     try {
@@ -232,19 +257,22 @@ export default function LaunchPage() {
             void runCheck();
           }}
         >
-          <Field label={copy.fields.rpcUrl} value={form.rpcUrl} onChange={(v) => update('rpcUrl', v)} />
-          <Field label={copy.fields.fallbackRpcUrl} value={form.fallbackRpcUrl} onChange={(v) => update('fallbackRpcUrl', v)} />
-          <Field label={copy.fields.expectedChainId} value={form.expectedChainId} onChange={(v) => update('expectedChainId', v)} />
-          <Field label={copy.fields.contractAddress} value={form.contractAddress} onChange={(v) => update('contractAddress', v)} />
+          <Field label={copy.fields.rpcUrl} value={form.rpcUrl} onChange={(v) => update('rpcUrl', v)} error={attempted ? fieldErrors.rpcUrl : undefined} learnMoreHref="/help#rpc-url" learnMoreLabel={copy.learnMore} />
+          <Field label={copy.fields.fallbackRpcUrl} value={form.fallbackRpcUrl} onChange={(v) => update('fallbackRpcUrl', v)} error={attempted ? fieldErrors.fallbackRpcUrl : undefined} learnMoreHref="/help#fallback" learnMoreLabel={copy.learnMore} />
+          <Field label={copy.fields.expectedChainId} value={form.expectedChainId} onChange={(v) => update('expectedChainId', v)} error={attempted ? fieldErrors.expectedChainId : undefined} learnMoreHref="/help#chain-id" learnMoreLabel={copy.learnMore} />
+          <Field label={copy.fields.contractAddress} value={form.contractAddress} onChange={(v) => update('contractAddress', v)} error={attempted ? fieldErrors.contractAddress : undefined} learnMoreHref="/help#contract" learnMoreLabel={copy.learnMore} />
           <div className="sm:col-span-2">
             <Field
               label={copy.fields.criticalReadSignature}
               value={form.criticalReadSignature}
               onChange={(v) => update('criticalReadSignature', v)}
+              error={attempted ? fieldErrors.criticalReadSignature : undefined}
+              learnMoreHref="/help#critical-read"
+              learnMoreLabel={copy.learnMore}
             />
           </div>
           <div className="sm:col-span-2">
-            <button type="submit" disabled={running || disabled} className="btn-pen min-h-12 px-6 disabled:opacity-60">
+            <button type="submit" disabled={running || disabled || (attempted && invalid)} className="btn-pen min-h-12 px-6 disabled:opacity-60">
               {running ? copy.running : copy.run}
             </button>
           </div>
@@ -259,7 +287,7 @@ export default function LaunchPage() {
 
       {access.kind === 'locked' && (
         <section aria-labelledby="locked-heading" className="mt-12">
-          <h2 id="locked-heading" className="font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">
+          <h2 id="locked-heading" className="font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black">
             {access.reason === 'expired' ? copy.expiredHeading : copy.lockedHeading}
           </h2>
           <p className="mt-5 max-w-[65ch]">

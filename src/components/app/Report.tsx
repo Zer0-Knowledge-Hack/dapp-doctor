@@ -24,7 +24,7 @@ export function Report({ report }: { report: DiagnosisReport }): React.ReactElem
       ? `${when}. Espera ${chain}. ${report.checks.length} chequeos en ${report.durationMs} ms.`
       : `${when}. Expects ${chain}. ${report.checks.length} checks in ${report.durationMs} ms.`;
   return (
-    <section aria-labelledby="result-heading" className="mt-12 sm:mt-16">
+    <section aria-labelledby="result-heading" className="mt-6">
       <VerdictSheet status={report.status} headline={report.headline} details={details} />
       <CheckRows items={report.checks} />
     </section>
@@ -51,7 +51,7 @@ export function VerdictSheet({ status, headline, details }: {
           <h2
             id="result-heading"
             tabIndex={-1}
-            className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.02] font-black text-balance outline-none"
+            className="font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black text-balance outline-none"
           >
             {text(headline)}
           </h2>
@@ -75,11 +75,32 @@ export interface CheckRow {
   summary: string;
   action?: string;
   observed?: Record<string, unknown>;
+  durationMs?: number;
 }
 
-const ROW_LABELS: Record<Lang, { action: string; observed: string }> = {
-  en: { action: 'What to do: ', observed: 'Observed data' },
-  es: { action: 'Qué hacer: ', observed: 'Datos observados' },
+const ROW_LABELS: Record<Lang, { action: string; observed: string; meaning: Record<CheckOutcome, string>; duration: string }> = {
+  en: {
+    action: 'What should I do? ',
+    observed: 'Observed data',
+    duration: 'Duration',
+    meaning: {
+      PASS: 'The check completed successfully.',
+      WARN: 'The check completed, but the configuration may need attention.',
+      FAIL: 'The check found a problem that should be fixed.',
+      NOT_TESTED: 'This check could not run. That is not evidence that it works.',
+    },
+  },
+  es: {
+    action: '¿Qué hago? ',
+    observed: 'Datos observados',
+    duration: 'Duración',
+    meaning: {
+      PASS: 'El chequeo terminó bien.',
+      WARN: 'El chequeo terminó, pero la configuración puede necesitar atención.',
+      FAIL: 'El chequeo encontró un problema que hay que corregir.',
+      NOT_TESTED: 'Este chequeo no pudo correr. Eso no es evidencia de que funciona.',
+    },
+  },
 };
 
 /** One ruled, numbered row per finding, with what to do and the raw observation. */
@@ -90,7 +111,7 @@ export function CheckRows({ items }: { items: CheckRow[] }): React.ReactElement 
     <ol className="mt-10 border-t-2 border-ink">
       {items.map((check, index) => (
         <li key={check.id} className="grid grid-cols-[2.5rem_1fr] gap-x-3 border-b border-ink py-6 sm:grid-cols-[3rem_1fr] sm:gap-x-6">
-          <span aria-hidden="true" className="font-display text-3xl leading-none font-bold">
+          <span aria-hidden="true" className="font-display text-xl leading-none font-bold">
             {String(index + 1).padStart(2, '0')}
           </span>
           <div className="min-w-0">
@@ -98,7 +119,13 @@ export function CheckRows({ items }: { items: CheckRow[] }): React.ReactElement 
               <h3 className="text-lg leading-snug font-bold">{text(check.title)}</h3>
               <OutcomeLabel outcome={check.outcome} />
             </div>
+            <p className="mt-1 text-sm text-muted">{labels.meaning[check.outcome]}</p>
             <p className="mt-2 max-w-[70ch] break-words">{text(check.summary)}</p>
+            {typeof check.durationMs === 'number' && (
+              <p className="mt-2 font-mono text-xs text-muted">
+                {labels.duration}: {check.durationMs} ms
+              </p>
+            )}
             {check.action && (
               <p className="mt-3 max-w-[70ch] border-l-[3px] border-pen pl-3 text-pen">
                 <span className="font-semibold">{labels.action}</span>

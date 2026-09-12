@@ -10,14 +10,14 @@ export function Hero() {
   const content = landing.hero;
   return (
     <section aria-labelledby="hero-heading">
-      <Sheet className="px-5 pt-8 pb-8 sm:px-10 sm:pt-12 sm:pb-10 lg:px-14 lg:pt-14 lg:pb-12">
-        <h1 id="hero-heading" className="max-w-[850px] font-display text-[clamp(3rem,8vw,6.5rem)] leading-[0.9] font-black tracking-[-0.025em] text-balance">
+      <Sheet className="px-5 pt-6 pb-6 sm:px-8 sm:pt-8 sm:pb-8 lg:px-10 lg:pt-9 lg:pb-9">
+        <h1 id="hero-heading" className="max-w-[28ch] font-display text-[clamp(1.6rem,4vw,2.35rem)] leading-[1.08] font-black tracking-[-0.02em] text-balance">
           {content.headline}
         </h1>
-        <Ecg rhythm="READY" motion={landing.motion} className="mt-7 h-24 w-full text-ink sm:mt-8 sm:h-32" />
-        <div className="mt-5 border-t-2 border-ink pt-6 sm:mt-7 sm:pt-8">
-          <p className="max-w-[64ch]">{content.body}</p>
-          <div className="mt-7 flex flex-wrap items-center gap-4 sm:gap-5">
+        <Ecg rhythm="READY" motion={landing.motion} className="mt-5 h-20 w-full text-ink sm:mt-6 sm:h-24" />
+        <div className="mt-4 border-t-2 border-ink pt-5 sm:mt-5 sm:pt-6">
+          <p className="max-w-[64ch] text-sm leading-relaxed text-muted sm:text-[0.9375rem]">{content.body}</p>
+          <div className="mt-5 flex flex-wrap items-center gap-3 sm:gap-4">
             <ButtonLink href={content.primary.href} variant="pen">{content.primary.label}</ButtonLink>
             <ButtonLink href={content.secondary.href} variant="plain">{content.secondary.label}</ButtonLink>
           </div>

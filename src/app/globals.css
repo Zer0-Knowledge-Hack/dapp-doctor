@@ -167,4 +167,7 @@ body {
   .ecg-motion-control {
     display: none;
   }
+  .animate-spin {
+    animation: none;
+  }
 }

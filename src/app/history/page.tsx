@@ -20,7 +20,10 @@ import {
   type ProStatus,
 } from '@/lib/billing/client';
 import { USER_ID_HEADER } from '@/lib/billing/constants';
+import { DeviceHistoryList } from '@/components/app/DeviceHistoryList';
 import { describeChain } from '@/lib/diagnostics/networks';
+import { readLocalHistory } from '@/lib/history/local';
+import type { DashboardEvent } from '@/lib/dashboard/types';
 import { LOCALE, type Lang } from '@/lib/i18n/lang';
 
 type AccessState =
@@ -56,6 +59,8 @@ const COPY = {
     yours: 'Your diagnoses',
     noStorage: 'Your Pro access is confirmed. History storage is not set up on this deployment yet, so new diagnoses are not being saved.',
     empty: ['No diagnoses saved yet.', 'Run one', 'and it will appear here.'],
+    deviceTitle: 'On this device',
+    open: 'Open',
     expects: 'expects',
     period: { none: 'one-time', P1M: 'per month', P1Y: 'per year', P1W: 'per week', every: 'every' },
     plans: {} as Record<string, string>,
@@ -83,6 +88,8 @@ const COPY = {
     yours: 'Tus diagnósticos',
     noStorage: 'Tu acceso Pro está confirmado. El guardado del historial todavía no está configurado en este despliegue, así que los diagnósticos nuevos no se guardan.',
     empty: ['Todavía no hay diagnósticos guardados.', 'Corre uno', 'y aparecerá aquí.'],
+    deviceTitle: 'En este dispositivo',
+    open: 'Abrir',
     expects: 'espera',
     period: { none: 'pago único', P1M: 'por mes', P1Y: 'por año', P1W: 'por semana', every: 'cada' },
     // Package names come from RevenueCat in English; these are the ones this offering sells.
@@ -115,6 +122,7 @@ export default function HistoryPage() {
   const [status, setStatus] = useState<ProStatus | null>(null);
   const [message, setMessage] = useState<Message>(null);
   const [busy, setBusy] = useState(false);
+  const [localLog, setLocalLog] = useState<DashboardEvent[]>([]);
 
   /**
    * The server is the source of truth for access. The browser SDK can say a
@@ -147,6 +155,10 @@ export default function HistoryPage() {
       return { kind: 'error', message: 'Could not reach DApp Doctor. Check your connection and reload.' };
     }
   }, []);
+
+  useEffect(() => {
+    setLocalLog(readLocalHistory());
+  }, [access]);
 
   useEffect(() => {
     let cancelled = false;
@@ -260,7 +272,7 @@ export default function HistoryPage() {
 
       {access.kind === 'locked' && (
         <section aria-labelledby="offer-heading" className="mt-12">
-          <h2 id="offer-heading" className="font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">
+          <h2 id="offer-heading" className="font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black">
             {access.reason === 'expired' ? copy.expiredHeading : copy.offerHeading}
           </h2>
           <p className="mt-5 max-w-[65ch]">
@@ -289,7 +301,7 @@ export default function HistoryPage() {
                       <dd className="md:mt-4">
                         <div className="flex items-baseline justify-end gap-2 md:justify-start">
                           <span className="text-sm text-muted">{product.currentPrice.currency}</span>
-                          <span className="font-display text-5xl leading-none font-bold sm:text-6xl">{price}</span>
+                          <span className="font-display text-[clamp(1.5rem,3vw,2rem)] leading-none font-bold">{price}</span>
                         </div>
                         <span className="mt-2 block text-right text-sm text-muted md:text-left">
                           {describePeriod(product.normalPeriodDuration, copy)}
@@ -357,7 +369,7 @@ export default function HistoryPage() {
             <AccountNotice />
           </div>
 
-          <h2 id="history-heading" className="mt-10 mb-6 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">
+          <h2 id="history-heading" className="mt-8 mb-4 font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black">
             {copy.yours}
           </h2>
 
@@ -390,6 +402,8 @@ export default function HistoryPage() {
           )}
         </section>
       )}
+
+      <DeviceHistoryList events={localLog} title={copy.deviceTitle} openLabel={copy.open} lang={lang} />
     </AppShell>
   );
 }

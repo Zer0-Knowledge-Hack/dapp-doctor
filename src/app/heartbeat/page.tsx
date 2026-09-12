@@ -423,7 +423,7 @@ export default function HeartbeatPage() {
         <Sheet className="px-5 py-6 sm:px-8 sm:py-8">
           <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-4">
             <div className="min-w-0">
-              <h2 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] leading-[1.02] font-black">{target.id === 'custom' ? copy.custom.label : copy.patients[target.id]?.label ?? target.label}</h2>
+              <h2 className="font-display text-[clamp(1.25rem,2.8vw,1.6rem)] leading-[1.1] font-black">{target.id === 'custom' ? copy.custom.label : copy.patients[target.id]?.label ?? target.label}</h2>
               <p className="mt-2 text-sm text-muted">
                 {chainName ? `${chainName}. ` : ''}
                 {listening ? copy.listening : timeOfDeath ? copy.timeOfDeath(timeOfDeath) : copy.off}
@@ -504,7 +504,7 @@ export default function HeartbeatPage() {
       </p>
 
       <section aria-labelledby="reading-heading" className="mt-14">
-        <h2 id="reading-heading" className="font-display text-3xl leading-none font-black sm:text-4xl">
+        <h2 id="reading-heading" className="font-display text-[clamp(1.25rem,2.8vw,1.6rem)] leading-[1.1] font-black">
           {copy.reading}
         </h2>
         <dl className="mt-6 border-t-2 border-ink">

@@ -48,11 +48,11 @@ export function LaunchReport({ report }: { report: LaunchReportData }): React.Re
         details={copy.details(formatWhen(report.startedAt, lang), describeChain(diagnosis.target.expectedChainId), report.rules.length, diagnosis.checks.length, report.durationMs)}
       />
 
-      <h2 className="mt-14 font-display text-3xl leading-none font-black sm:text-4xl">{copy.rules}</h2>
+      <h2 className="mt-10 font-display text-[clamp(1.25rem,2.8vw,1.6rem)] leading-[1.1] font-black">{copy.rules}</h2>
       <p className="mt-3 max-w-[65ch] text-sm text-muted">{copy.rulesIntro}</p>
       <CheckRows items={report.rules} />
 
-      <h2 className="mt-14 font-display text-3xl leading-none font-black sm:text-4xl">{copy.checks}</h2>
+      <h2 className="mt-10 font-display text-[clamp(1.25rem,2.8vw,1.6rem)] leading-[1.1] font-black">{copy.checks}</h2>
       <p className="mt-3 max-w-[65ch] text-sm text-muted">
         {copy.checksIntro(maxAge)}
       </p>
