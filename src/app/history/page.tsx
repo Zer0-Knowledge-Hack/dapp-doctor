@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import type { Offering, Package } from '@revenuecat/purchases-js';
+import { AccountNotice } from '@/components/account/AccountNotice';
 import { AppShell } from '@/components/app/AppShell';
 import { Notice } from '@/components/app/Notice';
 import { OutcomeLabel } from '@/components/app/OutcomeLabel';
@@ -268,6 +269,10 @@ export default function HistoryPage() {
               : copy.offerBody}
           </p>
 
+          <div className="mt-7">
+            <AccountNotice />
+          </div>
+
           {offering ? (
             <>
               <dl className="mt-9 grid border-y-2 border-ink md:grid-cols-3">
@@ -346,6 +351,10 @@ export default function HistoryPage() {
                 {copy.manage}
               </a>
             )}
+          </div>
+
+          <div className="mt-6">
+            <AccountNotice />
           </div>
 
           <h2 id="history-heading" className="mt-10 mb-6 font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black">

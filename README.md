@@ -21,6 +21,7 @@ Built for the **Burning Token** hackathon by NERDCONF (September 2026).
 | Launch Check (`/launch`): the stricter bar before mainnet, a Pro feature | ✅ live |
 | RPC Heartbeat (`/heartbeat`): listen to a chain's pulse | ✅ live |
 | Spanish interface (English \| Español buttons in the header) | ✅ live |
+| Optional Google sign-in, so Pro and history follow you to any device | ✅ built; on once its credentials are set |
 | MCP server for agents (`/api/mcp`) | ✅ live |
 | Config reader (paste a `.env` or config) | 🟡 built and tested; not yet in the web UI |
 | Nebius — AI root-cause analysis | ✖ not entered: the credits could not be redeemed from our country |
@@ -124,6 +125,22 @@ Diagnosis and comparison are free. Pro is for teams taking a dApp to mainnet:
   than granted on a guess.
 - A cancelled purchase, a failed one and an expired entitlement each have their
   own message. The history is kept after access expires.
+
+### Accounts
+
+Signing in is optional; nothing free needs it.
+
+- **Without an account**, the browser keeps a random id, and a purchase and
+  the history belong to it. Another device, or clearing site data, loses them.
+- **With Google sign-in**, the id comes from the account, so a purchase and the
+  history follow the person to any device. The id is a hash of the Google
+  account id, so it reveals nothing about the account.
+- Only the basic scopes (openid, email, profile) are requested. Sessions are
+  signed cookies, with no database and no Google token kept.
+- An account id is honoured only with that account's session: knowing it is
+  not enough to read someone's history.
+- A purchase made before signing in stays with that browser. The Pro page says
+  so before anyone buys.
 
 ### Launch Check
 

@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import { Big_Shoulders, Big_Shoulders_Stencil, Public_Sans } from 'next/font/google';
 import { cookies } from 'next/headers';
+import { AccountProvider } from '@/components/account/AccountProvider';
 import { LanguageProvider } from '@/components/i18n/LanguageProvider';
+import { isAuthConfigured } from '@/lib/auth/options';
+import { currentSession } from '@/lib/auth/session';
 import { LANG_COOKIE, parseLang, type Lang } from '@/lib/i18n/lang';
 import './globals.css';
 
@@ -40,13 +43,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const lang = await readLang();
+  const [lang, session] = await Promise.all([readLang(), currentSession()]);
   return (
     <html lang={lang}>
       <body
         className={`${bigShoulders.variable} ${bigShouldersStencil.variable} ${publicSans.variable} antialiased`}
       >
-        <LanguageProvider initial={lang}>{children}</LanguageProvider>
+        <LanguageProvider initial={lang}>
+          <AccountProvider enabled={isAuthConfigured()} session={session}>
+            {children}
+          </AccountProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

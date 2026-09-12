@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isLive } from './content';
+import { AccountButton } from '@/components/account/AccountButton';
 import { LanguageToggle } from '@/components/i18n/LanguageToggle';
 import { useLanding } from './useLanding';
 
@@ -38,6 +39,7 @@ export function SiteHeader() {
           ))}
         </nav>
         <LanguageToggle />
+        <AccountButton />
       </div>
     </header>
   );

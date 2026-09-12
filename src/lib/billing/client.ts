@@ -20,18 +20,35 @@ export function isBillingEnabled(): boolean {
 
 let memoryUserId: string | null = null;
 
+/** Set when someone is signed in: their account's id, the same on every device. */
+let accountUserId: string | null = null;
+
 /**
- * The RevenueCat app user id for this browser.
+ * Signs RevenueCat in as the account, or back out to this browser's anonymous
+ * id. Purchases made while signed in belong to the account, so they follow
+ * the person to any device. Called by the session provider on every page load.
+ */
+export async function setBillingAccount(appUserId: string | null): Promise<void> {
+  accountUserId = appUserId;
+  if (!sdkPromise) return;
+  const { purchases } = await sdkPromise;
+  const target = getOrCreateUserId();
+  if (purchases.getAppUserId() !== target) await purchases.changeUser(target);
+}
+
+/**
+ * The RevenueCat app user id: the signed-in account's, or else this browser's.
  *
  * We generate a UUID rather than calling the SDK's
  * generateRevenueCatAnonymousAppUserId(): that id looks like
  * "$RCAnonymousID:…", and the server refuses `$` and `:` in ids because they
  * travel into a URL path. A UUID is equally anonymous and passes the check.
  *
- * Known limitation: without accounts, clearing site data loses the id, and
- * with it access to a past purchase on this browser.
+ * Without signing in, the id lives in this browser only: another device, or
+ * clearing site data, loses access to a purchase made with it.
  */
 export function getOrCreateUserId(): string {
+  if (accountUserId) return accountUserId;
   try {
     const existing = window.localStorage.getItem(USER_ID_STORAGE_KEY);
     if (existing) return existing;
