@@ -6,6 +6,7 @@ import { AppShell } from '@/components/app/AppShell';
 import { Field } from '@/components/app/Field';
 import { Notice } from '@/components/app/Notice';
 import { Report } from '@/components/app/Report';
+import { DiagnosisEmptyState, DiagnosisLoadingState } from '@/components/brand/DiagnosisStates';
 import { revealResult } from '@/components/app/revealResult';
 import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import { Sheet } from '@/components/ui/Sheet';
@@ -241,9 +242,20 @@ export default function DiagnosePage() {
         </div>
       )}
 
-      {report && <Report report={report} />}
+      {/* Ready before the first run, working while one runs, then the report. */}
+      {running ? (
+        <DiagnosisLoadingState />
+      ) : report ? (
+        <Report report={report} />
+      ) : (
+        !error && (
+          <div className="mt-10">
+            <DiagnosisEmptyState />
+          </div>
+        )
+      )}
 
-      {report && history?.saved && (
+      {!running && report && history?.saved && (
         <div className="mt-6">
           <Notice tone="success">
             {copy.saved[0]}{' '}
@@ -258,7 +270,7 @@ export default function DiagnosePage() {
           </Notice>
         </div>
       )}
-      {report && history && !history.saved && history.reason === 'never-purchased' && (
+      {!running && report && history && !history.saved && history.reason === 'never-purchased' && (
         <div className="mt-6">
           <Notice tone="action">
             <Link href="/history" prefetch={false} className="font-semibold text-pen underline underline-offset-4">

@@ -39,7 +39,18 @@ async function readLang(): Promise<Lang> {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'DApp Doctor', description: DESCRIPTION[await readLang()] };
+  return {
+    title: 'DApp Doctor',
+    description: DESCRIPTION[await readLang()],
+    // The brand mark: SVG where supported, a PNG where not, and a full tile for iOS.
+    icons: {
+      icon: [
+        { url: '/brand/favicon.svg', type: 'image/svg+xml' },
+        { url: '/brand/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      ],
+      apple: '/brand/apple-touch-icon.png',
+    },
+  };
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

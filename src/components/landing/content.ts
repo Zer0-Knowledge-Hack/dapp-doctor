@@ -41,6 +41,7 @@ const en = {
     body: "The page loads and the node answers, but the balance says zero. DApp Doctor finds out why: the wrong network, a lagging node, or a contract that isn't there. Get a verdict in seconds.",
     primary: { label: 'Diagnose my dApp', href: '/diagnose' },
     secondary: { label: 'Watch it catch a broken one', href: '/diagnose?demo=broken' },
+    mascotAlt: 'The DApp Doctor otter in a lab coat, holding a tablet that shows a heartbeat and a network.',
   },
   symptoms: {
     availability: 'LIVE',
@@ -186,6 +187,7 @@ const es: LandingCopy = {
     body: 'La página carga y el nodo responde, pero el saldo dice cero. DApp Doctor encuentra por qué: la red equivocada, un nodo atrasado o un contrato que no está. Un veredicto en segundos.',
     primary: { label: 'Diagnosticar mi dApp', href: '/diagnose' },
     secondary: { label: 'Mira cómo atrapa una rota', href: '/diagnose?demo=broken' },
+    mascotAlt: 'La nutria de DApp Doctor con bata, sosteniendo una tableta con un latido y una red.',
   },
   symptoms: {
     availability: 'LIVE',

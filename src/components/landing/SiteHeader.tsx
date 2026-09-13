@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isLive } from './content';
 import { AccountButton } from '@/components/account/AccountButton';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { LanguageToggle } from '@/components/i18n/LanguageToggle';
 import { useLanding } from './useLanding';
 
@@ -17,11 +18,8 @@ export function SiteHeader() {
         {content.skip}
       </a>
       {/* The name is the way home from every page, as people expect from a site's logo. */}
-      <Link href="/" prefetch={false} aria-label={content.homeLabel} className="flex min-h-11 items-center gap-3 font-display text-[2rem] leading-none font-black">
-        <svg width="29" height="29" viewBox="0 0 29 29" fill="none" aria-hidden="true">
-          <path d="M10 0h9v10h10v9H19v10h-9V19H0v-9h10Z" fill="currentColor" />
-        </svg>
-        {content.name}
+      <Link href="/" prefetch={false} aria-label={content.homeLabel} className="flex min-h-11 items-center">
+        <BrandLogo name={content.name} />
       </Link>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:gap-x-8">
         <nav aria-label={content.navigationLabel} className="flex flex-wrap gap-x-5 sm:gap-x-7">

@@ -225,6 +225,16 @@ that change explicitly.
 - Pen blue means an action or guidance on what to do.
 - No dark theme, gradients, new accent colours, rounded card kits, soft
   shadows, icon packs, UI kits or animation libraries.
+- **Brand.** The logo and the mascot are separate things.
+  - The logo is the mark in `src/components/brand/BrandLogo.tsx`: a medical
+    cross carrying four nodes and a hub. Its files are in `public/brand`,
+    written by `scripts/brand-assets.mts`. Change the geometry in both places.
+  - The otter (`Mascot`) is a companion character, used as drawn. It is never
+    part of the logo and never in the navigation. Next to text that already
+    says what matters, it is decorative (`alt=""`).
+  - The diagnosis states (`DiagnosisEmptyState`, `DiagnosisLoadingState`,
+    `DiagnosisStatus`) live in `src/components/brand/DiagnosisStates.tsx`.
+    Reuse them rather than placing the mascot by hand.
 - Copy and LIVE / NOT_YET flags live in `src/components/landing/content.ts`.
   Flipping a flag is the only change needed when a feature ships.
 - `globals.css`, `layout.tsx`, fonts and shared components affect every page.

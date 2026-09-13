@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Offering, Package } from '@revenuecat/purchases-js';
 import { AccountNotice } from '@/components/account/AccountNotice';
 import { AppShell } from '@/components/app/AppShell';
+import { DiagnosisEmptyState } from '@/components/brand/DiagnosisStates';
 import { Notice } from '@/components/app/Notice';
 import { OutcomeLabel } from '@/components/app/OutcomeLabel';
 import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
@@ -364,13 +365,12 @@ export default function HistoryPage() {
           {!access.storage ? (
             <Notice>{copy.noStorage}</Notice>
           ) : access.reports.length === 0 ? (
-            <Notice tone="action">
-              {copy.empty[0]}{' '}
+            <DiagnosisEmptyState title={copy.empty[0]}>
               <Link href="/diagnose" prefetch={false} className="font-semibold text-pen underline underline-offset-4">
                 {copy.empty[1]}
               </Link>{' '}
               {copy.empty[2]}
-            </Notice>
+            </DiagnosisEmptyState>
           ) : (
             <ol className="border-t-2 border-ink">
               {access.reports.map((entry) => (
