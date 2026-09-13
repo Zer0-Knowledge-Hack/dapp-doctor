@@ -1,3 +1,4 @@
+import { redactRpcUrl } from '../src/lib/diagnostics/redact';
 import { findSecrets } from '../src/lib/mcp/secrets';
 import { compareConfigs, diagnoseConfig, diagnoseRpc } from '../src/lib/mcp/tools';
 
@@ -77,6 +78,23 @@ console.log('\n--- output redacts API keys in RPC URLs ---');
     config: `RPC_URL=https://base-sepolia.example-rpc.com/v2/${apiKey} CHAIN_ID=84532`,
   });
   check('a key on the same line as the chain id is not quoted back', !result.text.includes(apiKey), result.text);
+}
+
+{
+  // Every provider shape, not only a key at the end of the path. The public
+  // dashboard stores these URLs, so a key that slips through here is published.
+  const key = 'a1b2c3d4'.repeat(4);
+  const shapes = [
+    `https://base-mainnet.g.alchemy.com/v2/${key}`,
+    `https://example.base-mainnet.quiknode.pro/${key}/`,
+    `https://go.getblock.io/${key}/`,
+    `https://node.example.com/${key}/rpc`,
+    `https://rpc.example.com/base?apikey=${key}`,
+    `https://user:${key}@rpc.example.com/`,
+  ];
+  const leaked = shapes.filter((url) => redactRpcUrl(url).includes(key));
+  check('a key anywhere in the URL is redacted (end, before a trailing slash, mid-path, query, userinfo)', leaked.length === 0, leaked.join(' | '));
+  check('short path parts that are not keys stay readable', redactRpcUrl('https://rpc.example.com/v2/base/mainnet') === 'https://rpc.example.com/v2/base/mainnet');
 }
 
 console.log('\n--- agents are held to the SSRF guard ---');

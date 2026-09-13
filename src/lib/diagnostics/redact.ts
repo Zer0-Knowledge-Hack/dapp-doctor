@@ -21,12 +21,14 @@ export function redactRpcUrl(rawUrl: string): string {
     parsed.searchParams.set(key, '***');
   }
 
-  const segments = parsed.pathname.split('/');
-  const last = segments[segments.length - 1];
-  if (last && last.length >= 16 && /^[A-Za-z0-9_-]+$/.test(last)) {
-    segments[segments.length - 1] = '***';
-    parsed.pathname = segments.join('/');
-  }
+  // Any long opaque path segment is almost always a key, wherever it sits:
+  // Alchemy ends with it (/v2/<key>), QuickNode and GetBlock put it before a
+  // trailing slash (/<token>/), some providers follow it with more path. Only
+  // checking the last segment let those through.
+  parsed.pathname = parsed.pathname
+    .split('/')
+    .map((segment) => (segment.length >= 16 && /^[A-Za-z0-9_-]+$/.test(segment) ? '***' : segment))
+    .join('/');
 
   return parsed.toString();
 }
