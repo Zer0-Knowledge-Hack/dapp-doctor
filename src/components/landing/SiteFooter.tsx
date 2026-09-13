@@ -14,9 +14,10 @@ export function SiteFooter() {
         <BrandMark size={20} className="mt-0.5" />
         <span>{content.body}</span>
       </p>
-      <nav aria-label={content.navigationLabel} className="flex shrink-0 gap-6">
+      {/* Five links do not fit one phone-width row: they wrap whole, never mid-label. */}
+      <nav aria-label={content.navigationLabel} className="flex shrink-0 flex-wrap gap-x-6">
         {content.links.filter(isLive).map((link) => (
-          <Link key={link.href} href={link.href} prefetch={false} className="flex min-h-11 items-center font-semibold underline underline-offset-4">{link.label}</Link>
+          <Link key={link.href} href={link.href} prefetch={false} className="flex min-h-11 items-center font-semibold whitespace-nowrap underline underline-offset-4">{link.label}</Link>
         ))}
       </nav>
     </footer>
