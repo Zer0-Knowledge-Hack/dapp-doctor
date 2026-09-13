@@ -12,8 +12,10 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#fff1ee',
     lang: 'en',
     icons: [
-      { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'any' },
-      { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      // The brand mark. The maskable one drops the border and fills the square
+      // blue, so a launcher can crop it to any shape without cutting the cross.
+      { src: '/brand/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/brand/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
 }

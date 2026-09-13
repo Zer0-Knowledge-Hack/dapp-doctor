@@ -7,6 +7,7 @@ import { ConfigUpload } from '@/components/app/ConfigUpload';
 import { Field } from '@/components/app/Field';
 import { Notice } from '@/components/app/Notice';
 import { Report } from '@/components/app/Report';
+import { DiagnosisEmptyState, DiagnosisLoadingState } from '@/components/brand/DiagnosisStates';
 import { revealResult } from '@/components/app/revealResult';
 import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import { Icon } from '@/components/ui/Icon';
@@ -348,9 +349,20 @@ export default function DiagnosePage() {
         </div>
       )}
 
-      {report && <Report report={report} />}
+      {/* Ready before the first run, working while one runs, then the report. */}
+      {running ? (
+        <DiagnosisLoadingState />
+      ) : report ? (
+        <Report report={report} />
+      ) : (
+        !error && (
+          <div className="mt-6">
+            <DiagnosisEmptyState />
+          </div>
+        )
+      )}
 
-      {report && (
+      {!running && report && (
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/dashboard" prefetch={false} className="btn-plain inline-flex min-h-12 items-center px-5">
             {copy.next.dashboard}
@@ -366,7 +378,7 @@ export default function DiagnosePage() {
 
       <DeviceHistoryList events={localLog} title={copy.deviceHistory} openLabel={copy.open} lang={lang} />
 
-      {report && history?.saved && (
+      {!running && report && history?.saved && (
         <div className="mt-5">
           <Notice tone="success">
             {copy.saved[0]}{' '}
@@ -381,7 +393,7 @@ export default function DiagnosePage() {
           </Notice>
         </div>
       )}
-      {report && history && !history.saved && history.reason === 'never-purchased' && (
+      {!running && report && history && !history.saved && history.reason === 'never-purchased' && (
         <div className="mt-5">
           <Notice tone="action">
             <Link href="/history" prefetch={false} className="font-semibold text-pen underline underline-offset-4">

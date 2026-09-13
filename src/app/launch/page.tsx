@@ -6,6 +6,7 @@ import { AccountNotice } from '@/components/account/AccountNotice';
 import { AppShell } from '@/components/app/AppShell';
 import { Field } from '@/components/app/Field';
 import { LaunchReport } from '@/components/app/LaunchReport';
+import { DiagnosisLoadingState } from '@/components/brand/DiagnosisStates';
 import { Notice } from '@/components/app/Notice';
 import { revealResult } from '@/components/app/revealResult';
 import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
@@ -304,7 +305,7 @@ export default function LaunchPage() {
         </section>
       )}
 
-      {report && <LaunchReport report={report} />}
+      {running ? <DiagnosisLoadingState /> : report && <LaunchReport report={report} />}
     </AppShell>
   );
 }

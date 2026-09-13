@@ -8,6 +8,8 @@ import { ConfigUpload } from '@/components/app/ConfigUpload';
 import { Field } from '@/components/app/Field';
 import { Notice } from '@/components/app/Notice';
 import { OutcomeLabel } from '@/components/app/OutcomeLabel';
+import { Mascot } from '@/components/brand/Mascot';
+import { DiagnosisLoadingState } from '@/components/brand/DiagnosisStates';
 import { Ecg } from '@/components/ecg/Ecg';
 import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import { useLanding } from '@/components/landing/useLanding';
@@ -188,8 +190,8 @@ export default function ComparePage() {
         </div>
       )}
 
-      {comparison && <Result comparison={comparison} copy={copy} />}
-      {comparison && (
+      {running ? <DiagnosisLoadingState /> : comparison && <Result comparison={comparison} copy={copy} />}
+      {!running && comparison && (
         <div className="mt-6">
           <Link href="/dashboard" prefetch={false} className="btn-plain inline-flex min-h-12 items-center px-5">
             {copy.dashboard}
@@ -255,16 +257,22 @@ function Result({ comparison, copy }: { comparison: Comparison; copy: Copy }) {
   return (
     <section aria-labelledby="comparison-result" className="mt-12 sm:mt-16">
       <Sheet className="px-3 py-6 sm:px-8 sm:py-8 lg:px-10">
-        <h2
-          id="comparison-result"
-          tabIndex={-1}
-          className="max-w-[40ch] font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black text-balance outline-none"
-        >
-          {text(comparison.verdict)}
-        </h2>
-        <p className="mt-3 text-sm text-muted">
-          {copy.tally(comparison.fixed, comparison.regressed)}
-        </p>
+        {/* The doctor sits beside the verdict only: the two forms above stay plain. */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2
+              id="comparison-result"
+              tabIndex={-1}
+              className="max-w-[40ch] font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black text-balance outline-none"
+            >
+              {text(comparison.verdict)}
+            </h2>
+            <p className="mt-3 text-sm text-muted">
+              {copy.tally(comparison.fixed, comparison.regressed)}
+            </p>
+          </div>
+          <Mascot size={96} sizes="(min-width: 640px) 96px, 64px" className="w-16! shrink-0 sm:w-24!" />
+        </div>
 
         <div className="mt-7 grid grid-cols-2 divide-x divide-ink">
           <div className="min-w-0 pr-3 sm:pr-7">

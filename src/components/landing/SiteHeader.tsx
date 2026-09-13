@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { isLive } from './content';
 import { AccountButton } from '@/components/account/AccountButton';
+import { BrandLogo } from '@/components/brand/BrandLogo';
 import { LanguageToggle } from '@/components/i18n/LanguageToggle';
 import { useLanding } from './useLanding';
 import { Icon, type IconName } from '@/components/ui/Icon';
@@ -114,16 +115,14 @@ export function SiteHeader() {
           <Icon name="menu" size={18} />
           <span className="sr-only">{menu.open}</span>
         </button>
+        {/* The logo is the way home from every page, as people expect from a site's logo. */}
         <Link
           href="/"
           prefetch={false}
           aria-label={content.homeLabel}
-          className="flex min-w-0 items-center gap-2 font-display text-lg leading-none font-black sm:text-xl"
+          className="flex min-h-11 min-w-0 items-center"
         >
-          <svg width="22" height="22" viewBox="0 0 29 29" fill="none" aria-hidden="true" className="shrink-0">
-            <path d="M10 0h9v10h10v9H19v10h-9V19H0v-9h10Z" fill="currentColor" />
-          </svg>
-          <span className="truncate">{content.name}</span>
+          <BrandLogo name={content.name} />
         </Link>
       </div>
 

@@ -154,10 +154,33 @@ body {
   mix-blend-mode: multiply;
 }
 
+/* The mascot at work: a small, slow bob while the checks run. Nothing louder. */
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.mascot-working {
+  animation: mascot-bob 1.6s ease-in-out infinite;
+}
+
+/* A thin scan line under the loading message: progress felt, not measured. */
+@keyframes loading-scan {
+  from { background-position: -40% 0; }
+  to { background-position: 140% 0; }
+}
+.loading-scan {
+  background-image: linear-gradient(90deg, transparent, var(--pen), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: loading-scan 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ecg-track,
   .ecg-trace,
-  .stamp {
+  .stamp,
+  .mascot-working,
+  .loading-scan {
     animation: none;
   }
   .btn-pen,

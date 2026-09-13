@@ -1,5 +1,6 @@
 'use client';
 
+import { DiagnosisStatus } from '@/components/brand/DiagnosisStates';
 import { Ecg } from '@/components/ecg/Ecg';
 import { useEngineText, useLang } from '@/components/i18n/LanguageProvider';
 import { useLanding } from '@/components/landing/useLanding';
@@ -55,7 +56,10 @@ export function VerdictSheet({ status, headline, details }: {
           >
             {text(headline)}
           </h2>
-          <p className="mt-3 text-sm text-muted">{details}</p>
+          <p className="mt-3 flex items-start gap-2 text-sm text-muted">
+            <DiagnosisStatus outcome={status} className="mt-px" />
+            <span>{details}</span>
+          </p>
         </div>
         <Stamp status={status} size="lg" />
       </div>
@@ -117,7 +121,10 @@ export function CheckRows({ items }: { items: CheckRow[] }): React.ReactElement 
           <div className="min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h3 className="text-lg leading-snug font-bold">{text(check.title)}</h3>
-              <OutcomeLabel outcome={check.outcome} />
+              <span className="flex items-center gap-2">
+                <DiagnosisStatus outcome={check.outcome} />
+                <OutcomeLabel outcome={check.outcome} />
+              </span>
             </div>
             <p className="mt-1 text-sm text-muted">{labels.meaning[check.outcome]}</p>
             <p className="mt-2 max-w-[70ch] break-words">{text(check.summary)}</p>
