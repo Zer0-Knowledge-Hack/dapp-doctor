@@ -27,7 +27,7 @@ export default function LandingPage() {
   return (
     <>
       {isLive(landing.header) && <SiteHeader />}
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1160px] space-y-16 px-5 text-[1.0625rem] leading-[1.6] outline-none sm:space-y-24 sm:px-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1160px] space-y-7 px-5 text-[0.9375rem] leading-[1.55] outline-none sm:space-y-8 sm:px-8">
         {sections.filter(({ content }) => isLive(content)).map(({ content, Component }) => (
           <Component key={content.headline} />
         ))}

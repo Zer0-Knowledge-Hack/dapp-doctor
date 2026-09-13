@@ -15,9 +15,9 @@ export function BeforeAfter() {
   const content = landing.beforeAfter;
   return (
     <section aria-labelledby="comparison-heading">
-      <h2 id="comparison-heading" className="max-w-[22ch] font-display text-[clamp(2rem,4.5vw,3.25rem)] leading-[0.95] font-black text-balance">{content.headline}</h2>
-      <p className="mt-5 max-w-[65ch]">{content.body}</p>
-      <Sheet className="mt-9 px-3 py-6 sm:px-8 sm:py-8 lg:px-10">
+      <h2 id="comparison-heading" className="max-w-[28ch] font-display text-[clamp(1.3rem,2.8vw,1.7rem)] leading-[1.12] font-black text-balance">{content.headline}</h2>
+      <p className="mt-3 max-w-[65ch] text-sm leading-relaxed text-muted">{content.body}</p>
+      <Sheet className="mt-6 px-3 py-5 sm:px-6 sm:py-6 lg:px-8">
         <figure>
           <figcaption className="mb-7 text-sm text-muted">{content.caption}</figcaption>
           <div className="grid grid-cols-2 divide-x divide-ink">
@@ -32,7 +32,7 @@ export function BeforeAfter() {
               <Ecg rhythm="READY" motion={landing.motion} className="mt-5 h-20 w-full text-ink sm:h-24" />
             </div>
           </div>
-          <table className="mt-5 w-full table-fixed border-collapse text-left text-xs leading-snug sm:text-base">
+          <table className="mt-5 w-full table-fixed border-collapse text-left text-xs leading-snug sm:text-sm">
             <thead className="border-y-2 border-ink">
               <tr>
                 <th scope="col" className="w-[32%] py-3 pr-2 font-semibold">{content.columns.check}</th>

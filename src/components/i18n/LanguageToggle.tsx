@@ -13,7 +13,7 @@ export function LanguageToggle(): React.ReactElement {
   const lang = useLang();
   const setLang = useSetLang();
   return (
-    <div role="group" aria-label="Language / Idioma" className="flex border-2 border-ink bg-sheet">
+    <div role="group" aria-label="Language / Idioma" className="flex shrink-0 border-2 border-ink bg-sheet">
       {LANGS.map((option) => (
         <button
           key={option}
@@ -21,7 +21,7 @@ export function LanguageToggle(): React.ReactElement {
           lang={option}
           aria-pressed={lang === option}
           onClick={() => setLang(option)}
-          className="min-h-11 px-3 text-sm font-semibold [&+&]:border-l-2 [&+&]:border-ink aria-pressed:bg-ink aria-pressed:text-paper"
+          className="min-h-9 px-2 text-xs font-semibold sm:min-h-10 sm:px-2.5 [&+&]:border-l-2 [&+&]:border-ink aria-pressed:bg-ink aria-pressed:text-paper"
         >
           {NAMES[option]}
         </button>

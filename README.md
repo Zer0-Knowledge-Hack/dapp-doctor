@@ -195,7 +195,9 @@ The logo and the mascot are separate:
 | `dapp-doctor-mark.svg` | The mark: a medical cross carrying four connected nodes and a hub, the RPC network being diagnosed |
 | `dapp-doctor-logo-horizontal.svg` | Mark and wordmark. The wordmark sits on its own white label, so it reads on white, black or transparent backgrounds |
 | `dapp-doctor-logo-monochrome.svg` | All black, for one-colour use on light backgrounds |
-| `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png` | The mark simplified for 16 px: cross and hub, no network |
+| `favicon.svg`, `favicon-32.png` | The mark simplified for 16 px: cross and hub, no network |
+| `apple-touch-icon.png` | The full mark, for the iOS home screen |
+| `icon-512.png`, `icon-maskable-512.png` | The installed app's icons (web manifest). The maskable one fills the square blue so launchers can crop it |
 | `dapp-doctor-mascot.png` | The otter, a companion character. It is never part of the logo |
 
 - The wordmark files embed Big Shoulders (SIL Open Font License), so they keep

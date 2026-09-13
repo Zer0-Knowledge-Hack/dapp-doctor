@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { PwaRegister } from '@/components/app/PwaRegister';
+import { ToastHost } from '@/components/ui/Toasts';
 import { LANG_COOKIE, type Lang } from '@/lib/i18n/lang';
 import { toSpanish } from '@/lib/i18n/engineText';
 
@@ -26,7 +28,13 @@ export function LanguageProvider({ initial, children }: { initial: Lang; childre
   }, []);
 
   const value = useMemo(() => ({ lang, setLang }), [lang, setLang]);
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return (
+    <LanguageContext.Provider value={value}>
+      {children}
+      <ToastHost />
+      <PwaRegister />
+    </LanguageContext.Provider>
+  );
 }
 
 export function useLang(): Lang {

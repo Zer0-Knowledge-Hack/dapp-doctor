@@ -27,7 +27,7 @@ const COPY: Record<Lang, { readyTitle: string; readyBody: string; working: strin
 };
 
 /** Where a result will appear, before there is one. Kept short so the form stays in view. */
-export function DiagnosisEmptyState({ title, children, mascotSize = 104 }: {
+export function DiagnosisEmptyState({ title, children, mascotSize = 88 }: {
   /** Defaults to "Ready to diagnose your dApp." */
   title?: string;
   children?: React.ReactNode;
@@ -38,7 +38,7 @@ export function DiagnosisEmptyState({ title, children, mascotSize = 104 }: {
     <div className="flex items-center gap-5 border-2 border-dashed border-ink bg-sheet/60 px-5 py-4 sm:gap-7">
       <Mascot size={mascotSize} variant="ready" className="shrink-0" />
       <div className="min-w-0">
-        <p className="font-display text-2xl leading-tight font-black sm:text-3xl">{title ?? copy.readyTitle}</p>
+        <p className="font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black text-balance">{title ?? copy.readyTitle}</p>
         <div className="mt-2 max-w-[60ch] text-sm leading-relaxed text-muted">{children ?? copy.readyBody}</div>
       </div>
     </div>
@@ -49,10 +49,10 @@ export function DiagnosisEmptyState({ title, children, mascotSize = 104 }: {
 export function DiagnosisLoadingState({ label, detail }: { label?: string; detail?: string }): React.ReactElement {
   const copy = COPY[useLang()];
   return (
-    <div role="status" aria-live="polite" className="mt-12 flex items-center gap-5 border-2 border-ink bg-sheet px-5 py-4 sm:mt-16 sm:gap-7">
-      <Mascot size={96} variant="working" className="shrink-0" />
+    <div role="status" aria-live="polite" className="mt-6 flex items-center gap-5 border-2 border-ink bg-sheet px-5 py-4 sm:gap-7">
+      <Mascot size={80} variant="working" className="shrink-0" />
       <div className="min-w-0">
-        <p className="font-display text-2xl leading-tight font-black sm:text-3xl">{label ?? copy.working}</p>
+        <p className="font-display text-[clamp(1.35rem,3vw,1.75rem)] leading-[1.1] font-black text-balance">{label ?? copy.working}</p>
         <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-muted">{detail ?? copy.workingBody}</p>
         <span aria-hidden="true" className="loading-scan mt-4 block h-[3px] w-full max-w-[18rem] bg-ink/15" />
       </div>

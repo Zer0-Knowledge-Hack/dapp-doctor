@@ -25,8 +25,8 @@ export function Stamp({ status, size = 'md', label }: {
   const long = text.length > 8;
   const sizes =
     size === 'lg'
-      ? long ? 'text-[clamp(2rem,3.8vw,3.25rem)]' : 'text-[clamp(2.5rem,5vw,4rem)]'
-      : long ? 'text-[1.5rem] sm:text-[1.85rem]' : 'text-[1.75rem] sm:text-[2.25rem]';
+      ? long ? 'text-[clamp(1.35rem,2.6vw,1.75rem)]' : 'text-[clamp(1.5rem,3vw,2rem)]'
+      : long ? 'text-lg sm:text-xl' : 'text-xl sm:text-2xl';
   return (
     <span
       className={`stamp inline-block shrink-0 whitespace-nowrap border-4 border-current px-[0.4em] py-[0.12em] font-stamp leading-none font-black ${colors[status]} ${sizes}`}

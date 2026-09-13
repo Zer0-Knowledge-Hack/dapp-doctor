@@ -3,6 +3,7 @@ import { runDiagnosis } from '@/lib/diagnostics/engine';
 import { parseTarget } from '@/lib/diagnostics/parseTarget';
 import { requestUserId } from '@/lib/auth/session';
 import { checkEntitlement } from '@/lib/billing/entitlement';
+import { recordDiagnosisEvent } from '@/lib/dashboard/store';
 import { saveReport } from '@/lib/history/store';
 
 export const runtime = 'nodejs';
@@ -37,6 +38,14 @@ export async function POST(request: Request) {
       runDiagnosis(parsed.target),
       userId ? checkEntitlement(userId) : Promise.resolve(null),
     ]);
+
+    // Dashboard log is independent of Pro history: every finished diagnosis
+    // is a real event. Best effort — a Redis outage must not hide the report.
+    try {
+      await recordDiagnosisEvent(report, 'diagnose');
+    } catch {
+      /* the diagnosis is the product */
+    }
 
     let history: HistoryOutcome | undefined;
     if (entitlement) {

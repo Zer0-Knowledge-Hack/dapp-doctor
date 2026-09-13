@@ -22,14 +22,14 @@ export function BrandMark({ size = 32, className = '' }: { size?: number; classN
 }
 
 /**
- * Mark and wordmark, for the header. On a phone only the mark shows, so the
- * navigation keeps its room; the link around it carries the accessible name.
+ * Mark and wordmark, for the header. The name truncates rather than wraps, so
+ * on a phone the menu button, language and account controls keep their room.
  */
 export function BrandLogo({ name }: { name: string }): React.ReactElement {
   return (
-    <span className="flex items-center gap-3">
-      <BrandMark size={36} />
-      <span className="hidden font-display text-[2rem] leading-none font-black sm:inline">{name}</span>
+    <span className="flex min-w-0 items-center gap-2">
+      <BrandMark size={28} />
+      <span className="truncate font-display text-lg leading-none font-black sm:text-xl">{name}</span>
     </span>
   );
 }

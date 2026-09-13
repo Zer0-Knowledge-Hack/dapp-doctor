@@ -27,12 +27,13 @@ const en = {
     navigationLabel: 'Main navigation',
     skip: 'Skip to content',
     links: [
-      { label: 'Home', href: '/', availability: 'LIVE' },
+      { label: 'Dashboard', href: '/dashboard', availability: 'LIVE' },
       { label: 'Diagnose', href: '/diagnose', availability: 'LIVE' },
       { label: 'Compare', href: '/compare', availability: 'LIVE' },
-      { label: 'Pro', href: '/history', availability: 'LIVE' },
       { label: 'Heartbeat', href: '/heartbeat', availability: 'LIVE' },
-      { label: 'Source code', href: repository, availability: 'LIVE' },
+      { label: 'Launch', href: '/launch', availability: 'LIVE' },
+      { label: 'History', href: '/history', availability: 'LIVE' },
+      { label: 'Help', href: '/help', availability: 'LIVE' },
     ],
   },
   hero: {
@@ -145,6 +146,8 @@ const en = {
     navigationLabel: 'Footer navigation',
     links: [
       { label: 'Diagnose', href: '/diagnose', availability: 'LIVE' },
+      { label: 'Dashboard', href: '/dashboard', availability: 'LIVE' },
+      { label: 'Help', href: '/help', availability: 'LIVE' },
       { label: 'Listen to a chain', href: '/heartbeat', availability: 'LIVE' },
       { label: 'Source code', href: repository, availability: 'LIVE' },
     ],
@@ -173,12 +176,13 @@ const es: LandingCopy = {
     navigationLabel: 'Navegación principal',
     skip: 'Saltar al contenido',
     links: [
-      { label: 'Inicio', href: '/', availability: 'LIVE' },
+      { label: 'Panel', href: '/dashboard', availability: 'LIVE' },
       { label: 'Diagnosticar', href: '/diagnose', availability: 'LIVE' },
       { label: 'Comparar', href: '/compare', availability: 'LIVE' },
-      { label: 'Pro', href: '/history', availability: 'LIVE' },
       { label: 'Latido', href: '/heartbeat', availability: 'LIVE' },
-      { label: 'Código fuente', href: repository, availability: 'LIVE' },
+      { label: 'Lanzamiento', href: '/launch', availability: 'LIVE' },
+      { label: 'Historial', href: '/history', availability: 'LIVE' },
+      { label: 'Ayuda', href: '/help', availability: 'LIVE' },
     ],
   },
   hero: {
@@ -288,6 +292,8 @@ const es: LandingCopy = {
     navigationLabel: 'Navegación del pie',
     links: [
       { label: 'Diagnosticar', href: '/diagnose', availability: 'LIVE' },
+      { label: 'Panel', href: '/dashboard', availability: 'LIVE' },
+      { label: 'Ayuda', href: '/help', availability: 'LIVE' },
       { label: 'Escuchar una red', href: '/heartbeat', availability: 'LIVE' },
       { label: 'Código fuente', href: repository, availability: 'LIVE' },
     ],
